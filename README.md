@@ -31,3 +31,6 @@ Yoshua Bengio 最新论文：用于序列预测的actor-critic算法 http://t.cn
 
 另外：ICML16强化学习相关论文24篇 
 http://weibo.com/p/1001603975123651678749
+----------------------------------------------------
+更新：David Silver 的课程 
+http://www0.cs.ucl.ac.uk/staff/d.silver/web/Teaching.html
