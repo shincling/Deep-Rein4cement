@@ -34,3 +34,6 @@ Yoshua Bengio 最新论文：用于序列预测的actor-critic算法 http://t.cn
 更新：David Silver 的课程 
 http://www0.cs.ucl.ac.uk/staff/d.silver/web/Teaching.html
 中文翻译：http://chenrudan.github.io/archives/
+
+Github的一个rl库推荐：
+https://github.com/matthiasplappert/keras-rl
