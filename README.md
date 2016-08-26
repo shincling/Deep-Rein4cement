@@ -37,3 +37,10 @@ http://www0.cs.ucl.ac.uk/staff/d.silver/web/Teaching.html
 
 ##Github的一个rl库推荐：
 https://github.com/matthiasplappert/keras-rl
+
+# Some Papers in NLP
+##Language Understanding for Text-based Games Using Deep Reinforcement Learning
+http://arxiv.org/pdf/1506.08941
+
+##Deep Reinforcement Learning with an Action Space Defined by Natural Language
+http://arxiv.org/abs/1511.04636
