@@ -1,3 +1,4 @@
+# coding=utf8
 import numpy.random as rand
 import numpy as np
 
@@ -17,3 +18,7 @@ def mu_policy(theta):
         max_theta=np.max(theta[state])
         mu[state]=np.exp(theta[state]-max_theta)/np.sum(np.exp(theta[state]-max_theta))
     return mu
+
+mu=mu_policy(theta)
+print mu
+
