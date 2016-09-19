@@ -33,3 +33,14 @@ def log_mu_policy(theta):
     return log_mu
 log_mu=log_mu_policy(theta)
 print log_mu
+
+def gradient_log_mu_policy(theta,mu,state,action):
+    n_states,n_actions=theta.shape
+    grad=np.zeros((n_states,n_actions))
+    grad[state,action]=1
+    max_theta=np.max(theta[state])
+    grad[state]=grad[state]-mu[state]
+    return grad
+print "gradient log mu with state-1 action-1:\n",gradient_log_mu_policy(theta,mu,1,1)
+print "mu policy after adding gradient:\n",mu_policy(theta+gradient_log_mu_policy(theta,mu,1,1))
+
