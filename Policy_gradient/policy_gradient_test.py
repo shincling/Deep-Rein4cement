@@ -12,9 +12,9 @@ def generate_rollout(mu_policy, transition_matrix, reward_matrix, discount, path
     path_action[0] = np.random.choice(n_actions, 1, p=mu_policy[path_state[0]])
     path_reward =  reward_matrix[path_state[0], path_action[0]]
     for i in range(1, path_len) :
-        path_state[i] = np.random.choice(n_states , 1, p=transition_matrix[path_action[i-1]][path_state[i-1]])
+        path_state[i] = np.random.choice(n_states , 1, p=transition_matrix[path_action[i-1]][path_state[i-1]])#这里是５个state里选一个，选择的概率用一个１×5的array衡量，在这里是[1,0,0,0,0]
         path_action[i] = np.random.choice(n_actions, 1, p=mu_policy[path_state[i]])
-        path_reward =  path_reward + discount**i * reward_matrix[path_state[i], path_action[i]]
+        path_reward =  path_reward + discount**i * reward_matrix[path_state[i], path_action[i]] #reward是之前的和这次的乘以折扣之后的累加
     return path_state, path_action, path_reward
 
 
@@ -124,6 +124,9 @@ path_len = 10
 path_num = 10
 
 P, R = mdp_ex.forest(S=n_states, p=fire_prob)
+#P是转移矩阵，大小是action*state*state,(a,i,j)的意思是在状态i下采用a转移到j状态的概率
+#R是reward矩阵，大小是action*state,(a,i)的意思是在状态i下瓷用a得到的reward是多少
+
 
 pi = mdptoolbox.mdp.PolicyIteration(P, R, discount=discount)
 pi.policy0=[1,1,1,1,1]
