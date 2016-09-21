@@ -42,7 +42,7 @@ pred = T.argmax(probas, axis=1)
 cost = T.nnet.categorical_crossentropy(probas, y).sum()
 params = lasagne.layers.helper.get_all_params(l_mu, trainable=True)
 grads = T.grad(cost, params)
-updates = lasagne.updates.adagrad(grads, params, learning_rate=0.2)
+updates = lasagne.updates.sgd(grads, params, learning_rate=0.2)
 
 
 givens = {
@@ -67,4 +67,4 @@ for epoch in range(n_epoch):
         count=np.count_nonzero(pred-target)
         error_cout+=count
     print cost/batch_size
-    print 'error_rate:',1-float(error_cout)/(batch_total_number*batch_size)
+    print 'accuracy:',1-float(error_cout)/(batch_total_number*batch_size)
