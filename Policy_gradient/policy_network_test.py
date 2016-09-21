@@ -27,7 +27,8 @@ x2=T.matrix('all')
 n_classes=3
 batch_size=16
 n_epoch=530
-
+path_lenth=10
+n_paths=1000
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
@@ -51,7 +52,57 @@ givens = {
     }
 
 train_model = theano.function([], [cost,pred], givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+output_model = theano.function([], [cost,probas,pred], givens=givens,on_unused_input='ignore',allow_input_downcast=True)
 
+idx_batch=np.random.randint(0,500)
+x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
+target=yy[idx_batch*batch_size:(idx_batch+1)*batch_size]
+y_batch=label_binarize(target,range(n_classes))
+x_shared.set_value(x_batch)
+y_shared.set_value(np.int32(y_batch))
+cost,probs,pred=output_model()
+print cost,pred
+print probs
+
+def sample_one_path(state,prob):
+    n_action=len(prob)
+    action=np.random.choice([0,1,2],p=prob)
+    if state[0]<0.5:
+        if action ==0:
+            reward=3
+            state[0]+=0.1
+        elif action ==1:
+            reward=2
+            # state[1]+=0.1
+        else:
+            reward=1
+    else:
+        if action ==0:
+            reward=0
+            state[0]+=0.1
+        elif action ==1:
+            reward=2
+            # state[1]+=0.1
+        else:
+            reward=1
+    return action,state,reward
+
+states=x_batch
+for time in range(n_paths):
+    total_state=np.zeros([batch_size,path_lenth,dimention])
+    total_reward=np.zeros([batch_size,path_lenth])
+    total_action=np.zeros([batch_size,path_lenth])
+    for t in range(path_lenth):#进行了10步
+        for idx,prob in enumerate(probs):#对于batch里的每一个样本
+            action,state,reward=sample_one_path(states[idx],prob)
+            #action是这一步采取的动作，state是进入的新的状态，prob四
+            total_state[idx,t]=state
+            total_action[idx,t]=action
+            total_reward[idx,t]=reward
+    states=total_state
+
+
+'''
 for epoch in range(n_epoch):
     batch_total_number=len(xx)/batch_size
     cost,error_cout=0,0
@@ -68,3 +119,4 @@ for epoch in range(n_epoch):
         error_cout+=count
     print cost/batch_size
     print 'accuracy:',1-float(error_cout)/(batch_total_number*batch_size)
+'''
