@@ -33,8 +33,8 @@ x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.float
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, 1,dimention))
-l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
-l_theta = lasagne.layers.DenseLayer(l_in1,3,W=lasagne.init.Normal(std=1))
+# l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
+l_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
 l_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
