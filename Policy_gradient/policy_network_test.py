@@ -45,6 +45,29 @@ params = lasagne.layers.helper.get_all_params(l_mu, trainable=True)
 grads = T.grad(cost, params)
 updates = lasagne.updates.sgd(grads, params, learning_rate=0.05)
 
+if 1:
+    x_range=T.tensor3()
+    x_action=T.imatrix()
+    x_range_shared=theano.shared(np.zeros((batch_size,path_lenth,dimention),dtype=theano.config.floatX),borrow=True)
+    x_range_action=theano.shared(np.zeros((batch_size,path_lenth),dtype=np.int32),borrow=True)
+
+    l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
+    # l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
+    l_range_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
+    l_range_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
+    probas = lasagne.layers.helper.get_output(l_range_mu, {l_in: x_range_shared})
+    givens = {
+        x_range: x_range_shared,
+        x_action: x_range_action
+    }
+
+    output_model_range = theano.function( [],probas,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+    x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
+    x_range_action_batch=np.int32(np.random.randint(0,batch_size,size=[batch_size,path_lenth]))
+    x_range_shared.set_value(x_range_batch)
+    x_range_action.set_value(x_range_action_batch)
+    pred=output_model_range()
+    pass
 
 givens = {
     x: x_shared,
