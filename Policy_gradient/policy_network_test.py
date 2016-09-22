@@ -88,7 +88,7 @@ def sample_one_path(state,prob):
     return action,state,reward
 
 states=x_batch
-for time in range(n_paths):
+for repeat_time in range(n_paths):
     total_state=np.zeros([batch_size,path_lenth,dimention])
     total_reward=np.zeros([batch_size,path_lenth])
     total_action=np.zeros([batch_size,path_lenth])
@@ -99,7 +99,9 @@ for time in range(n_paths):
             total_state[idx,t]=state
             total_action[idx,t]=action
             total_reward[idx,t]=reward
-    states=total_state
+        x_shared.set_value(total_state[:,t])
+        probs=output_model()[1]
+    pass
 
 
 '''
