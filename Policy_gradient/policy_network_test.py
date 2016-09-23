@@ -15,7 +15,6 @@ def get_dataset(dimention):
             y[idx]=2
     return x,y
 
-
 dimention=10
 xx,yy=get_dataset(dimention)
 yy=np.int32(yy)
@@ -26,7 +25,7 @@ x2=T.matrix('all')
 
 n_classes=3
 batch_size=16
-n_epoch=530
+n_epoch=500
 path_lenth=10
 n_paths=1000
 
@@ -34,16 +33,14 @@ x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.float
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, 1,dimention))
-# l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
 l_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
 l_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
-pred = T.argmax(probas, axis=1)
-cost = T.nnet.categorical_crossentropy(probas, y).sum()
-params = lasagne.layers.helper.get_all_params(l_mu, trainable=True)
-grads = T.grad(cost, params)
-updates = lasagne.updates.sgd(grads, params, learning_rate=0.05)
+givens = {
+    x: x_shared,
+}
+output_model = theano.function([],probas, givens=givens,on_unused_input='ignore',allow_input_downcast=True)
 
 if 1:
     x_range=T.tensor3()
@@ -52,18 +49,16 @@ if 1:
     x_range_action=theano.shared(np.zeros((batch_size,path_lenth),dtype=np.int32),borrow=True)
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
-    # l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
-    l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
+    l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[batch_size,path_lenth,n_classes])
-    probas = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
-    # probas = lasagne.layers.helper.get_output(l_range_theta, {l_range_in: x_range_shared})
+    probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
     givens = {
         x_range: x_range_shared,
         x_action: x_range_action
     }
 
-    output_model_range = theano.function( [],probas,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+    output_model_range = theano.function([],probas_range,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
     x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
     x_range_action_batch=np.int32(np.random.randint(0,batch_size,size=[batch_size,path_lenth]))
     x_range_shared.set_value(x_range_batch)
@@ -72,13 +67,6 @@ if 1:
     print pred.shape
 
 '''
-givens = {
-    x: x_shared,
-    y: y_shared,
-    }
-
-train_model = theano.function([], [cost,pred], givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
-output_model = theano.function([], [cost,probas,pred], givens=givens,on_unused_input='ignore',allow_input_downcast=True)
 
 idx_batch=np.random.randint(0,500)
 x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
