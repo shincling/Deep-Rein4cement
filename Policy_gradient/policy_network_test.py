@@ -107,21 +107,26 @@ for epoch in range(n_epoch):
         states_0=x_batch
         #初始化两个循环的参数，state和概率
         x_shared.set_value(x_batch)
-        probs_sample_t=output_model()
+        probs_sample_0=output_model()
         for repeat_time in range(n_paths):
             total_state=np.zeros([batch_size,path_lenth,dimention])
             total_reward=np.zeros([batch_size,path_lenth])
             total_action=np.zeros([batch_size,path_lenth])
+            total_probs=np.zeros([batch_size,path_lenth,n_classes])
+            total_state[:,0,:]=x_batch
+            total_probs[:,0,:]=probs_sample_0
             for t in range(path_lenth):#进行了10步
-                for idx,prob in enumerate(probs_sample_t):#对于batch里的每一个样本
-                    action,state,reward=sample_one_path(x_shared[idx],prob)
+                for idx,prob in enumerate(total_probs[:,t,:]):#对于batch里的每一个样本
+                    action,new_state,reward=sample_one_path(total_state[idx,t],total_probs[idx,t,:])
                     #action是这一步采取的动作，state是进入的新的状态，prob四
-                    total_state[idx,t]=state
                     total_action[idx,t]=action
                     total_reward[idx,t]=reward
-                #更新state和概率,下一个循环使用
-                x_shared.set_value(total_state[:,t])
-                probs_sample_t=output_model()
+                    #更新state和概率,下一个循环使用
+                    if t!=path_lenth-1:
+                        total_state[idx,t+1]=new_state
+
+                x_shared.set_value(total_state[:,t+1])
+                total_probs[:,t+1,:]=output_model()
             pass
 
 states=x_batch
