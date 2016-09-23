@@ -53,9 +53,11 @@ if 1:
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     # l_in1=lasagne.layers.DenseLayer(l_in,30,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
-    l_range_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
-    l_range_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
-    probas = lasagne.layers.helper.get_output(l_range_mu, {l_in: x_range_shared})
+    # l_range_theta = lasagne.layers.ReshapeLayer(l_in,[batch_size*path_lenth,dimention])
+    l_range_theta = lasagne.layers.DenseLayer(l_range_in,3,W=lasagne.init.Normal(std=1))
+    l_range_mu=lasagne.layers.NonlinearityLayer(l_range_theta,nonlinearity=lasagne.nonlinearities.softmax)
+    probas = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
+    probas = lasagne.layers.helper.get_output(l_range_theta, {l_range_in: x_range_shared})
     givens = {
         x_range: x_range_shared,
         x_action: x_range_action
@@ -67,8 +69,9 @@ if 1:
     x_range_shared.set_value(x_range_batch)
     x_range_action.set_value(x_range_action_batch)
     pred=output_model_range()
+    print pred
     pass
-
+'''
 givens = {
     x: x_shared,
     y: y_shared,
@@ -125,7 +128,7 @@ for repeat_time in range(n_paths):
         x_shared.set_value(total_state[:,t])
         probs=output_model()[1]
     pass
-
+'''
 
 '''
 for epoch in range(n_epoch):
