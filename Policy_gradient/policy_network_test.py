@@ -66,7 +66,6 @@ if 1:
     pred=output_model_range()
     print pred.shape
 
-'''
 
 idx_batch=np.random.randint(0,500)
 x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
@@ -74,8 +73,7 @@ target=yy[idx_batch*batch_size:(idx_batch+1)*batch_size]
 y_batch=label_binarize(target,range(n_classes))
 x_shared.set_value(x_batch)
 y_shared.set_value(np.int32(y_batch))
-cost,probs,pred=output_model()
-print cost,pred
+probs=output_model()
 print probs
 
 def sample_one_path(state,prob):
@@ -101,6 +99,31 @@ def sample_one_path(state,prob):
             reward=1
     return action,state,reward
 
+for epoch in range(n_epoch):
+    batch_total_number=len(xx)/batch_size
+    np.random.shuffle(xx)
+    for idx_batch in range(batch_total_number):
+        x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
+        states_0=x_batch
+        #初始化两个循环的参数，state和概率
+        x_shared.set_value(x_batch)
+        probs_sample_t=output_model()
+        for repeat_time in range(n_paths):
+            total_state=np.zeros([batch_size,path_lenth,dimention])
+            total_reward=np.zeros([batch_size,path_lenth])
+            total_action=np.zeros([batch_size,path_lenth])
+            for t in range(path_lenth):#进行了10步
+                for idx,prob in enumerate(probs_sample_t):#对于batch里的每一个样本
+                    action,state,reward=sample_one_path(x_shared[idx],prob)
+                    #action是这一步采取的动作，state是进入的新的状态，prob四
+                    total_state[idx,t]=state
+                    total_action[idx,t]=action
+                    total_reward[idx,t]=reward
+                #更新state和概率,下一个循环使用
+                x_shared.set_value(total_state[:,t])
+                probs_sample_t=output_model()
+            pass
+
 states=x_batch
 for repeat_time in range(n_paths):
     total_state=np.zeros([batch_size,path_lenth,dimention])
@@ -116,9 +139,7 @@ for repeat_time in range(n_paths):
         x_shared.set_value(total_state[:,t])
         probs=output_model()[1]
     pass
-'''
 
-'''
 for epoch in range(n_epoch):
     batch_total_number=len(xx)/batch_size
     cost,error_cout=0,0
@@ -135,4 +156,3 @@ for epoch in range(n_epoch):
         error_cout+=count
     print cost/batch_size
     print 'accuracy:',1-float(error_cout)/(batch_total_number*batch_size)
-'''
