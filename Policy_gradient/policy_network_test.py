@@ -34,8 +34,9 @@ def reward_count(total_reward,length,discout=0.99):
             result[line]+=total_reward[line,step]*(discout**step)
     '''
     discout_list=np.zeros(length)
-    for idx,step in enumerate(discout_list):
+    for idx in range(discout_list.shape[0]):
         step=discout**idx
+        discout_list[idx]=step
     result=np.dot(total_reward,discout_list)
     return result
 
@@ -87,7 +88,7 @@ if 1:
         x_action: x_range_action,
         x_reward:x_range_reward
     }
-    cost=100000*T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+    cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
     grads=T.grad(cost,params)
     scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
     updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=lr)
@@ -108,7 +109,7 @@ y_batch=label_binarize(target,range(n_classes))
 x_shared.set_value(x_batch)
 y_shared.set_value(np.int32(y_batch))
 probs=output_model()
-print probs
+# print probs
 
 def sample_one_path(state,prob):
     n_action=len(prob)
@@ -171,6 +172,8 @@ for epoch in range(n_epoch):
             aver_reward=np.mean(np.sum(np.float32(total_reward),axis=1))
             _,cost=output_model_range()
             print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+            # print _[0]
+            # print '\n\n\n'
 '''
 states=x_batch
 for repeat_time in range(n_paths):
