@@ -55,7 +55,7 @@ n_epoch=500
 path_lenth=10
 n_paths=1000
 max_norm=100
-lr=0.05
+lr=0.015
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
@@ -89,7 +89,7 @@ if 1:
         x_action: x_range_action,
         x_reward:x_range_reward
     }
-    cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+    cost=T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
     grads=T.grad(cost,params)
     scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
     updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=lr)
