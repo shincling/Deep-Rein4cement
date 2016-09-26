@@ -15,6 +15,30 @@ def get_dataset(dimention):
             y[idx]=2
     return x,y
 
+def action_to_vector(x,n_classes):
+    result=np.zeros([x.shape[0],x.shape[1],n_classes])
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            if x[i,j]==0:
+                result[i,j]=np.array([1.0,0,0])
+            elif x[i,j]==1:
+                result[i,j]=np.array([0,1.0,0])
+            elif x[i,j]==2:
+                result[i,j]=np.array([0,0,1.0])
+    return result
+
+def reward_count(total_reward,length,discout=0.99):
+    '''
+    for line in range(total_reward.shape[0]):
+        for step in range(length):
+            result[line]+=total_reward[line,step]*(discout**step)
+    '''
+    discout_list=np.zeros(length)
+    for idx,step in enumerate(discout_list):
+        step=discout**idx
+    result=np.dot(total_reward,discout_list)
+    return result
+
 dimention=10
 xx,yy=get_dataset(dimention)
 yy=np.int32(yy)
@@ -44,9 +68,11 @@ output_model = theano.function([],probas, givens=givens,on_unused_input='ignore'
 
 if 1:
     x_range=T.tensor3()
-    x_action=T.imatrix()
+    x_action=T.tensor3()
+    x_reward=T.matrix()
     x_range_shared=theano.shared(np.zeros((batch_size,path_lenth,dimention),dtype=theano.config.floatX),borrow=True)
     x_range_action=theano.shared(np.zeros((batch_size,path_lenth),dtype=np.int32),borrow=True)
+    x_range_reward=theano.shared(np.zeros((batch_size,path_lenth),dtype=theano.config.floatX),borrow=True)
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
@@ -55,8 +81,10 @@ if 1:
     probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
     givens = {
         x_range: x_range_shared,
-        x_action: x_range_action
+        x_action: x_range_action,
+        x_reward:x_range_reward
     }
+    cost=T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
 
     output_model_range = theano.function([],probas_range,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
     x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
@@ -130,6 +158,10 @@ for epoch in range(n_epoch):
                 if t!=path_lenth-1:
                     x_shared.set_value(total_state[:,t+1])
                     total_probs[:,t+1,:]=output_model()
+
+            x_range_shared.set_value(total_state)
+            x_range_action.set_value(action_to_vector(total_action,n_classes))
+            x_range_reward.set_value(reward_count(total_reward,length=path_lenth,discout=0.99))
         pass
 
 states=x_batch
