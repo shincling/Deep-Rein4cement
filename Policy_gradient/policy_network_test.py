@@ -142,6 +142,8 @@ for epoch in range(n_epoch):
         #初始化两个循环的参数，state和概率
         x_shared.set_value(x_batch)
         probs_sample_0=output_model()
+
+        tmp_cost,tmp_result=0,0
         for repeat_time in range(n_paths):#每一个batch都要经过多次重复采样获取不同的道路
             #但是第一步的初始化状态都是一样的
             total_state=np.zeros([batch_size,path_lenth,dimention])
@@ -171,9 +173,13 @@ for epoch in range(n_epoch):
             x_range_reward.set_value(reward_count(total_reward,length=path_lenth,discout=0.99))
             aver_reward=np.mean(np.sum(np.float32(total_reward),axis=1))
             _,cost=output_model_range()
-            print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+            tmp_cost+=cost
+            tmp_result+=aver_reward
+            # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
             # print _[0]
             # print '\n\n\n'
+        print 'cost:{},average_reward:{}'.format(tmp_cost/n_paths,tmp_result/n_paths)
+
 '''
 states=x_batch
 for repeat_time in range(n_paths):
