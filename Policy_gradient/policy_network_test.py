@@ -1,4 +1,5 @@
 #coding=utf8
+import time
 import lasagne
 import numpy as np
 import theano
@@ -106,9 +107,9 @@ idx_batch=np.random.randint(0,500)
 x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
 target=yy[idx_batch*batch_size:(idx_batch+1)*batch_size]
 y_batch=label_binarize(target,range(n_classes))
-x_shared.set_value(x_batch)
-y_shared.set_value(np.int32(y_batch))
-probs=output_model()
+# x_shared.set_value(x_batch)
+# y_shared.set_value(np.int32(y_batch))
+# probs=output_model()
 # print probs
 
 def sample_one_path(state,prob):
@@ -135,6 +136,7 @@ def sample_one_path(state,prob):
     return action,state,reward
 
 for epoch in range(n_epoch):
+    begin_time=time.time()
     batch_total_number=len(xx)/batch_size
     np.random.shuffle(xx)
     for idx_batch in range(batch_total_number):
@@ -179,6 +181,8 @@ for epoch in range(n_epoch):
             # print _[0]
             # print '\n\n\n'
         print 'cost:{},average_reward:{}'.format(tmp_cost/n_paths,tmp_result/n_paths)
+
+    print 'epoch:{},time:{}'.format(epoch,time.time-begin_time)
 
 '''
 states=x_batch
