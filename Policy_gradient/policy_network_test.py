@@ -52,6 +52,8 @@ batch_size=16
 n_epoch=500
 path_lenth=10
 n_paths=1000
+max_norm=100
+lr=0.05
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
@@ -69,30 +71,34 @@ output_model = theano.function([],probas, givens=givens,on_unused_input='ignore'
 if 1:
     x_range=T.tensor3()
     x_action=T.tensor3()
-    x_reward=T.matrix()
+    x_reward=T.vector()
     x_range_shared=theano.shared(np.zeros((batch_size,path_lenth,dimention),dtype=theano.config.floatX),borrow=True)
-    x_range_action=theano.shared(np.zeros((batch_size,path_lenth),dtype=np.int32),borrow=True)
-    x_range_reward=theano.shared(np.zeros((batch_size,path_lenth),dtype=theano.config.floatX),borrow=True)
+    x_range_action=theano.shared(np.zeros((batch_size,path_lenth,n_classes),dtype=theano.config.floatX),borrow=True)
+    x_range_reward=theano.shared(np.zeros(batch_size,dtype=theano.config.floatX),borrow=True)
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
     l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[batch_size,path_lenth,n_classes])
     probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
+    params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
     givens = {
         x_range: x_range_shared,
         x_action: x_range_action,
         x_reward:x_range_reward
     }
-    cost=T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+    cost=100000*T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+    grads=T.grad(cost,params)
+    scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
+    updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=lr)
 
-    output_model_range = theano.function([],probas_range,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
-    x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
-    x_range_action_batch=np.int32(np.random.randint(0,batch_size,size=[batch_size,path_lenth]))
-    x_range_shared.set_value(x_range_batch)
-    x_range_action.set_value(x_range_action_batch)
-    pred=output_model_range()
-    print pred.shape
+    output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+    # x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
+    # x_range_action_batch=np.int32(np.random.randint(0,batch_size,size=[batch_size,path_lenth]))
+    # x_range_shared.set_value(x_range_batch)
+    # x_range_action.set_value(x_range_action_batch)
+    # pred=output_model_range()[0]
+    # print pred.shape
 
 
 idx_batch=np.random.randint(0,500)
@@ -162,8 +168,10 @@ for epoch in range(n_epoch):
             x_range_shared.set_value(total_state)
             x_range_action.set_value(action_to_vector(total_action,n_classes))
             x_range_reward.set_value(reward_count(total_reward,length=path_lenth,discout=0.99))
-        pass
-
+            aver_reward=np.mean(np.sum(np.float32(total_reward),axis=1))
+            _,cost=output_model_range()
+            print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+'''
 states=x_batch
 for repeat_time in range(n_paths):
     total_state=np.zeros([batch_size,path_lenth,dimention])
@@ -196,3 +204,4 @@ for epoch in range(n_epoch):
         error_cout+=count
     print cost/batch_size
     print 'accuracy:',1-float(error_cout)/(batch_total_number*batch_size)
+'''
