@@ -50,19 +50,19 @@ x1=T.vector('x1')
 x2=T.matrix('all')
 
 n_classes=3
-batch_size=16
+batch_size=64
 n_epoch=500
 path_lenth=10
-n_paths=1000
+n_paths=2000
 max_norm=100
-lr=0.2
+lr=0.05
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, 1,dimention))
-l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.softmax)
-l_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
+l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.sigmoid)
+l_theta = lasagne.layers.DenseLayer(l_in1,3,W=lasagne.init.Normal(std=1))
 l_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
@@ -81,7 +81,7 @@ if 1:
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
-    l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.softmax)
+    l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.sigmoid)
     l_range_remu = lasagne.layers.DenseLayer(l_range_in1,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[batch_size,path_lenth,n_classes])
     probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
@@ -91,10 +91,10 @@ if 1:
         x_action: x_range_action,
         x_reward:x_range_reward
     }
-    cost=T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+    cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
     grads=T.grad(cost,params)
     scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
-    updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=lr)
+    updates = lasagne.updates.sgd(scaled_grads, params, learning_rate=lr)
 
     output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
     # x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
@@ -105,10 +105,10 @@ if 1:
     # print pred.shape
 
 
-idx_batch=np.random.randint(0,500)
-x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
-target=yy[idx_batch*batch_size:(idx_batch+1)*batch_size]
-y_batch=label_binarize(target,range(n_classes))
+# idx_batch=np.random.randint(0,500)
+# x_batch=xx[idx_batch*batch_size:(idx_batch+1)*batch_size]
+# target=yy[idx_batch*batch_size:(idx_batch+1)*batch_size]
+# y_batch=label_binarize(target,range(n_classes))
 # x_shared.set_value(x_batch)
 # y_shared.set_value(np.int32(y_batch))
 # probs=output_model()
@@ -119,7 +119,7 @@ def sample_one_path(state,prob):
     action=np.random.choice([0,1,2],p=prob)
     if state[0]<0.5:
         if action ==0:
-            reward=3
+            reward=5
             state[0]+=0.1
         elif action ==1:
             reward=2
@@ -183,6 +183,12 @@ for epoch in range(n_epoch):
             # print _[0]
             # print '\n\n\n'
         print 'cost:{},average_reward:{}'.format(tmp_cost/n_paths,tmp_result/n_paths)
+        print total_state[0]
+        print total_action[0]
+        print _[0]
+        print total_reward[0]
+        print '\n\n'
+
 
     print 'epoch:{},time:{}'.format(epoch,time.time()-begin_time)
 
