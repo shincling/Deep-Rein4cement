@@ -50,19 +50,21 @@ x1=T.vector('x1')
 x2=T.matrix('all')
 
 n_classes=3
-batch_size=64
+batch_size=100
 n_epoch=500
 path_lenth=10
-n_paths=2000
+n_paths=5000
 max_norm=100
-lr=0.005
+lr=0.01
+std=1
+print 'batch_size:{},n_paths:{},std:{},lr:{}'.format(batch_size,n_paths,std,lr)
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, 1,dimention))
-# l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.sigmoid)
-l_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
+l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=std),nonlinearity=lasagne.nonlinearities.sigmoid)
+l_theta = lasagne.layers.DenseLayer(l_in1,3,W=lasagne.init.Normal(std=std))
 l_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
@@ -81,9 +83,9 @@ if 1:
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
-    # l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.sigmoid)
-    # l_range_remu = lasagne.layers.DenseLayer(l_range_in1,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
-    l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
+    l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.sigmoid)
+    l_range_remu = lasagne.layers.DenseLayer(l_range_in1,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
+    # l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[batch_size,path_lenth,n_classes])
     probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
     params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
@@ -94,8 +96,8 @@ if 1:
     }
     cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
     grads=T.grad(cost,params)
-    scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
-    updates = lasagne.updates.sgd(scaled_grads, params, learning_rate=lr)
+    # scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
+    updates = lasagne.updates.adagrad(grads, params, learning_rate=lr)
 
     output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
     # x_range_batch=np.random.rand(batch_size,path_lenth,dimention)
