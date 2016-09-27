@@ -55,14 +55,14 @@ n_epoch=500
 path_lenth=10
 n_paths=2000
 max_norm=100
-lr=0.05
+lr=0.005
 
 x_shared=theano.shared(np.zeros((batch_size,dimention),dtype=theano.config.floatX),borrow=True)
 y_shared=theano.shared(np.zeros((batch_size,1),dtype=np.int32),borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, 1,dimention))
-l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.sigmoid)
-l_theta = lasagne.layers.DenseLayer(l_in1,3,W=lasagne.init.Normal(std=1))
+# l_in1= lasagne.layers.DenseLayer(l_in,dimention,W=lasagne.init.Normal(std=1),nonlinearity=lasagne.nonlinearities.sigmoid)
+l_theta = lasagne.layers.DenseLayer(l_in,3,W=lasagne.init.Normal(std=1))
 l_mu=lasagne.layers.NonlinearityLayer(l_theta,nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
@@ -81,8 +81,9 @@ if 1:
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size,path_lenth,dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[batch_size*path_lenth,dimention])
-    l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.sigmoid)
-    l_range_remu = lasagne.layers.DenseLayer(l_range_in1,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
+    # l_range_in1= lasagne.layers.DenseLayer(l_range_theta,dimention,W=l_in1.W,nonlinearity=lasagne.nonlinearities.sigmoid)
+    # l_range_remu = lasagne.layers.DenseLayer(l_range_in1,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
+    l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[batch_size,path_lenth,n_classes])
     probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
     params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
@@ -183,12 +184,12 @@ for epoch in range(n_epoch):
             # print _[0]
             # print '\n\n\n'
         print 'cost:{},average_reward:{}'.format(tmp_cost/n_paths,tmp_result/n_paths)
-        print total_state[0]
-        print total_action[0]
-        print _[0]
-        print total_reward[0]
-        print '\n\n'
-
+        if tmp_result/n_paths>19:
+            print total_state[0]
+            print total_action[0]
+            print _[0]
+            print total_reward[0]
+            print '\n\n'
 
     print 'epoch:{},time:{}'.format(epoch,time.time()-begin_time)
 
