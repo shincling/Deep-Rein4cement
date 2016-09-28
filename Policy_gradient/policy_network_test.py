@@ -59,9 +59,9 @@ n_epoch = 500
 path_lenth = 10
 n_paths = 1000
 max_norm = 40
-lr = 0.02
+lr = 0.002
 std = 0.1
-discout=0.8
+discout=0.9
 print 'batch_size:{},n_paths:{},std:{},lr:{},discount:{}'.format(batch_size, n_paths, std, lr,discout)
 
 x_shared = theano.shared(np.zeros((batch_size, dimention), dtype=theano.config.floatX), borrow=True)
