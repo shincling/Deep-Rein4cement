@@ -243,4 +243,5 @@ for epoch in range(n_epoch):
         error_cout+=count
     print cost/batch_size
     print 'accuracy:',1-float(error_cout)/(batch_total_number*batch_size)
+    test
 '''
