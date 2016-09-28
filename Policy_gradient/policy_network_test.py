@@ -54,23 +54,25 @@ x1 = T.vector('x1')
 x2 = T.matrix('all')
 
 n_classes = 3
-batch_size = 64
+batch_size = 100
 n_epoch = 500
 path_lenth = 10
-n_paths = 5000
-max_norm = 100
-lr = 0.2
-std = 1
-print 'batch_size:{},n_paths:{},std:{},lr:{}'.format(batch_size, n_paths, std, lr)
+n_paths = 1000
+max_norm = 40
+lr = 0.02
+std = 0.1
+discout=0.8
+print 'batch_size:{},n_paths:{},std:{},lr:{},discount:{}'.format(batch_size, n_paths, std, lr,discout)
 
 x_shared = theano.shared(np.zeros((batch_size, dimention), dtype=theano.config.floatX), borrow=True)
 y_shared = theano.shared(np.zeros((batch_size, 1), dtype=np.int32), borrow=True)
 
-l_in = lasagne.layers.InputLayer(shape=(None, 1, dimention))
+l_in = lasagne.layers.InputLayer(shape=(None, dimention))
 l_in1 = lasagne.layers.DenseLayer(l_in, dimention, W=lasagne.init.Normal(std=std),
                                   nonlinearity=lasagne.nonlinearities.sigmoid)
-l_theta = lasagne.layers.DenseLayer(l_in1, 3, W=lasagne.init.Normal(std=std))
-l_mu = lasagne.layers.NonlinearityLayer(l_theta, nonlinearity=lasagne.nonlinearities.softmax)
+l_theta = lasagne.layers.DenseLayer(l_in1, 3, W=lasagne.init.Normal(std=std),nonlinearity=lasagne.nonlinearities.softmax)
+l_mu = l_theta
+# l_mu = lasagne.layers.NonlinearityLayer(l_theta, nonlinearity=lasagne.nonlinearities.softmax)
 
 probas = lasagne.layers.helper.get_output(l_mu, {l_in: x_shared})
 givens = {
@@ -105,8 +107,8 @@ if 1:
     }
     cost = -T.mean(T.sum(T.sum(T.log(probas_range) * x_action, axis=2), axis=1) * x_reward)
     grads = T.grad(cost, params)
-    # scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
-    updates = lasagne.updates.sgd(grads, params, learning_rate=lr)
+    scaled_grads = lasagne.updates.total_norm_constraint(grads, max_norm)
+    updates = lasagne.updates.rmsprop(grads, params, learning_rate=lr)
 
     output_model_range = theano.function([], [probas_range, cost], givens=givens, updates=updates,
                                          on_unused_input='ignore', allow_input_downcast=True)
@@ -161,7 +163,7 @@ for epoch in range(n_epoch):
         x_shared.set_value(x_batch)
         probs_sample_0 = output_model()
 
-        tmp_cost, tmp_result = 0, 0
+        tmp_cost, tmp_result, tmp_reward = 0, 0, 0
         for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
             # 但是第一步的初始化状态都是一样的
             total_state = np.zeros([batch_size, path_lenth, dimention])
@@ -188,16 +190,18 @@ for epoch in range(n_epoch):
 
             x_range_shared.set_value(total_state)
             x_range_action.set_value(action_to_vector(total_action, n_classes))
-            x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=0.99))
+            x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
             aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
+            espect_reward = np.mean(np.float32(reward_count(total_reward,path_lenth,discout=discout)), axis=0)
             _, cost = output_model_range()
             tmp_cost += cost
             tmp_result += aver_reward
+            tmp_reward += espect_reward
             # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
             # print _[0]
             # print '\n\n\n'
-        print 'cost:{},average_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths)
-        if tmp_result / n_paths > 19:
+        print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
+        if tmp_result / n_paths > 10:
             print total_state[0]
             print total_action[0]
             print _[0]
