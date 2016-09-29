@@ -8,7 +8,8 @@ from sklearn.preprocessing import LabelBinarizer, label_binarize
 
 
 def get_dataset(dimention):
-    x = 0.1 * np.random.random((10000, dimention))
+    # x = 0.1 * np.random.random((10000, dimention))
+    x = np.random.random((10000, dimention))
     y = np.zeros((10000))
     for idx, i in enumerate(x):
         if 0.3 < i[0] < 0.7:
@@ -56,12 +57,12 @@ x2 = T.matrix('all')
 n_classes = 3
 batch_size = 100
 n_epoch = 500
-path_lenth = 10
+path_lenth = 5
 n_paths = 1000
 max_norm = 40
-lr = 0.002
-std = 0.1
-discout=0.9
+lr = 0.02
+std = 1
+discout=0.99
 print 'batch_size:{},n_paths:{},std:{},lr:{},discount:{}'.format(batch_size, n_paths, std, lr,discout)
 
 x_shared = theano.shared(np.zeros((batch_size, dimention), dtype=theano.config.floatX), borrow=True)
@@ -150,8 +151,19 @@ def sample_one_path(state, prob):
             # state[1]+=0.1
         else:
             reward = 1
-    return action, state, reward
+    return action, state, 10*reward
 
+def sample_one_path_plus(state, prob):
+    n_action = len(prob)
+    reward=0
+    action = np.random.choice([0, 1, 2], p=prob)
+    if action == 0:
+        state[0] += 1
+    if state[0]>path_lenth-1:
+        if action==1:
+            reward=10
+
+    return action, state, reward
 
 for epoch in range(n_epoch):
     begin_time = time.time()
@@ -175,7 +187,8 @@ for epoch in range(n_epoch):
             for t in range(path_lenth):  # 进行了10步
                 for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                     now_state = total_state[idx, t].copy()
-                    action, new_state, reward = sample_one_path(now_state, prob)
+                    # action, new_state, reward = sample_one_path(now_state, prob)
+                    action, new_state, reward = sample_one_path_plus(now_state, prob)
                     # action是这一步采取的动作，state是进入的新的状态，prob四
                     total_action[idx, t] = action
                     total_reward[idx, t] = reward
@@ -201,7 +214,8 @@ for epoch in range(n_epoch):
             # print _[0]
             # print '\n\n\n'
         print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
-        if tmp_result / n_paths > 10:
+        # if tmp_result / n_paths > 10:
+        if tmp_result / n_paths +10.1 > 10:
             print total_state[0]
             print total_action[0]
             print _[0]
