@@ -8,8 +8,8 @@ from sklearn.preprocessing import LabelBinarizer, label_binarize
 
 
 def get_dataset(dimention):
-    # x = 0.1 * np.random.random((10000, dimention))
-    x = np.random.random((10000, dimention))
+    x = 0.1 * np.random.random((10000, dimention))
+    # x = np.random.random((10000, dimention))
     y = np.zeros((10000))
     for idx, i in enumerate(x):
         if 0.3 < i[0] < 0.7:
@@ -57,7 +57,7 @@ x2 = T.matrix('all')
 n_classes = 3
 batch_size = 100
 n_epoch = 500
-path_lenth = 5
+path_lenth = 10
 n_paths = 1000
 max_norm = 40
 lr = 0.02
@@ -69,9 +69,9 @@ x_shared = theano.shared(np.zeros((batch_size, dimention), dtype=theano.config.f
 y_shared = theano.shared(np.zeros((batch_size, 1), dtype=np.int32), borrow=True)
 
 l_in = lasagne.layers.InputLayer(shape=(None, dimention))
-l_in1 = lasagne.layers.DenseLayer(l_in, dimention, W=lasagne.init.Normal(std=std),
+l_in1 = lasagne.layers.DenseLayer(l_in, dimention, W=lasagne.init.Normal(std=std),b=None,
                                   nonlinearity=lasagne.nonlinearities.sigmoid)
-l_theta = lasagne.layers.DenseLayer(l_in1, 3, W=lasagne.init.Normal(std=std),nonlinearity=lasagne.nonlinearities.softmax)
+l_theta = lasagne.layers.DenseLayer(l_in1, 3, W=lasagne.init.Normal(std=std),b=None,nonlinearity=lasagne.nonlinearities.softmax)
 l_mu = l_theta
 # l_mu = lasagne.layers.NonlinearityLayer(l_theta, nonlinearity=lasagne.nonlinearities.softmax)
 
@@ -93,9 +93,9 @@ if 1:
 
     l_range_in = lasagne.layers.InputLayer(shape=(batch_size, path_lenth, dimention))
     l_range_theta = lasagne.layers.ReshapeLayer(l_range_in, [batch_size * path_lenth, dimention])
-    l_range_in1 = lasagne.layers.DenseLayer(l_range_theta, dimention, W=l_in1.W,
+    l_range_in1 = lasagne.layers.DenseLayer(l_range_theta, dimention, W=l_in1.W,b=None,
                                             nonlinearity=lasagne.nonlinearities.sigmoid)
-    l_range_remu = lasagne.layers.DenseLayer(l_range_in1, n_classes, W=l_theta.W,
+    l_range_remu = lasagne.layers.DenseLayer(l_range_in1, n_classes, W=l_theta.W,b=None,
                                              nonlinearity=lasagne.nonlinearities.softmax)
     # l_range_remu = lasagne.layers.DenseLayer(l_range_theta,n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
     l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu, [batch_size, path_lenth, n_classes])
@@ -151,12 +151,14 @@ def sample_one_path(state, prob):
             # state[1]+=0.1
         else:
             reward = 1
-    return action, state, 10*reward
+    return action, state, reward
 
 def sample_one_path_plus(state, prob):
     n_action = len(prob)
     reward=0
     action = np.random.choice([0, 1, 2], p=prob)
+    # print 'P:{}'.format(prob)
+    # print 'A:{}'.format(action)
     if action == 0:
         state[0] += 1
     if state[0]>path_lenth-1:
@@ -174,6 +176,9 @@ for epoch in range(n_epoch):
         # 初始化两个循环的参数，state和概率
         x_shared.set_value(x_batch)
         probs_sample_0 = output_model()
+        xx_batch=x_batch.reshape([x_batch.shape[0],1,x_batch.shape[1]]).repeat(path_lenth,axis=1)
+        x_range_shared.set_value(xx_batch)
+        probbb=output_model_range()[0]
 
         tmp_cost, tmp_result, tmp_reward = 0, 0, 0
         for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
@@ -187,8 +192,8 @@ for epoch in range(n_epoch):
             for t in range(path_lenth):  # 进行了10步
                 for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                     now_state = total_state[idx, t].copy()
-                    # action, new_state, reward = sample_one_path(now_state, prob)
-                    action, new_state, reward = sample_one_path_plus(now_state, prob)
+                    action, new_state, reward = sample_one_path(now_state, prob)
+                    # action, new_state, reward = sample_one_path_plus(now_state, prob)
                     # action是这一步采取的动作，state是进入的新的状态，prob四
                     total_action[idx, t] = action
                     total_reward[idx, t] = reward
@@ -220,6 +225,7 @@ for epoch in range(n_epoch):
             print total_action[0]
             print _[0]
             print total_reward[0]
+            print probs_sample_0[0]
             print '\n\n'
 
     print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
