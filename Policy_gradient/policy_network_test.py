@@ -130,7 +130,7 @@ if 1:
 # probs=output_model()
 # print probs
 
-def sample_one_path(state, prob):
+def sample_one_path(state, prob):#累计reward 实验
     n_action = len(prob)
     action = np.random.choice([0, 1, 2], p=prob)
     if state[0] < 0.5:
@@ -153,7 +153,7 @@ def sample_one_path(state, prob):
             reward = 1
     return action, state, reward
 
-def sample_one_path_plus(state, prob):
+def sample_one_path_plus(state, prob):#路径规划实验
     n_action = len(prob)
     reward=0
     action = np.random.choice([0, 1, 2], p=prob)
@@ -174,8 +174,8 @@ for epoch in range(n_epoch):
     for idx_batch in range(batch_total_number):
         x_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
         # 初始化两个循环的参数，state和概率
-        x_shared.set_value(x_batch)
-        probs_sample_0 = output_model()
+        # x_shared.set_value(x_batch)
+        # probs_sample_0 = output_model()
         xx_batch=x_batch.reshape([x_batch.shape[0],1,x_batch.shape[1]]).repeat(path_lenth,axis=1)
         x_range_shared.set_value(xx_batch)
         probbb=output_model_range()[0]
@@ -188,6 +188,8 @@ for epoch in range(n_epoch):
             total_action = np.zeros([batch_size, path_lenth])
             total_probs = np.zeros([batch_size, path_lenth, n_classes])
             total_state[:, 0, :] = x_batch
+            x_shared.set_value(x_batch)
+            probs_sample_0 = output_model()
             total_probs[:, 0, :] = probs_sample_0
             for t in range(path_lenth):  # 进行了10步
                 for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
@@ -225,7 +227,7 @@ for epoch in range(n_epoch):
             print total_action[0]
             print _[0]
             print total_reward[0]
-            print probs_sample_0[0]
+            # print total_probs[0]
             print '\n\n'
 
     print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
