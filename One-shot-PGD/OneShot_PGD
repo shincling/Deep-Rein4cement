@@ -13,6 +13,29 @@ def get_dataset(dimention):
         y=int(i[0]/0.1)
     return x,y
 
+class Model:
+    def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
+                 n_paths=1000,max_norm=50,lr=0.05,update_method='sgd',**kwargs):
+        self.dimension=dimension
+        self.n_classe=n_classes
+        self.batch_size=batch_size
+        self.n_epoch=n_epoch
+        self.path_length=path_length
+        self.n_paths=n_paths
+        self.max_norm=max_norm
+        self.lr=lr
+
+        if update_method=='sgd':
+            self.update_method=lasagne.updates.sgd
+        elif update_method=='adagrad':
+            self.update_method=lasagne.updates.adagrad
+        elif update_method=='adadelta':
+            self.update_method=lasagne.updates.adadelta
+        elif update_method=='rmsprop':
+            self.update_method=lasagne.updates.rmsprop
+
+
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
