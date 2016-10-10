@@ -15,7 +15,7 @@ def get_dataset(dimention):
 
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
-                 n_paths=1000,max_norm=50,lr=0.05,update_method='sgd',**kwargs):
+                 n_paths=1000,max_norm=50,lr=0.05,update_method='sgd',std=0.5,**kwargs):
         self.dimension=dimension
         self.n_classe=n_classes
         self.batch_size=batch_size
@@ -24,6 +24,7 @@ class Model:
         self.n_paths=n_paths
         self.max_norm=max_norm
         self.lr=lr
+        self.std=std
 
         if update_method=='sgd':
             self.update_method=lasagne.updates.sgd
@@ -33,7 +34,36 @@ class Model:
             self.update_method=lasagne.updates.adadelta
         elif update_method=='rmsprop':
             self.update_method=lasagne.updates.rmsprop
+        
+    def build(self):
+        x_range=T.tensor3()
+        x_action=T.tensor3()
+        x_reward=T.vector()
 
+        x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.dimension),dtype=theano.config.floatX),borrow=True)
+        x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
+        x_range_reward=theano.shared(np.zeros(self.batch_size,dtype=theano.config.floatX),borrow=True)
+
+        B, C = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
+        l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.dimension))
+        l_range_theta = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.dimension])
+        l_range_remu = lasagne.layers.DenseLayer(l_range_theta,self.n_classes,W=lasagne.init.Uniform(),nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_remu = lasagne.layers.DenseLayer(l_range_remu,self.n_classes,W=l_theta.W,nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_mu = lasagne.layers.ReshapeLayer(l_range_remu,[self.batch_size,self.path_length,self.n_classes])
+        probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
+        params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
+        givens = {
+            x_range: x_range_shared,
+            x_action: x_range_action,
+            x_reward:x_range_reward
+        }
+        cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
+        grads=T.grad(cost,params)
+        scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
+        updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
+
+        output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+        pass
 
 
 if __name__=='__main__':
@@ -47,6 +77,7 @@ if __name__=='__main__':
     parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.05, help='Task#')
+    parser.add_argument('--std', type=float, default=0.5, help='Task#')
     parser.add_argument('--update_method', type=str, default='sgd', help='Task#')
     args=parser.parse_args()
     print '*' * 80
