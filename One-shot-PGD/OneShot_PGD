@@ -1,4 +1,5 @@
 #coding=utf8
+import argparse
 import lasagne
 import numpy as np
 import theano
@@ -8,6 +9,22 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 def get_dataset(dimention):
     x=np.random.random((10000,dimention))
     y=np.zeros((10000))
-    for idx,i in enumerate(x):
-        y=int(x[0]/0.1)
+    for i in enumerate(x):
+        y=int(i[0]/0.1)
     return x,y
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=int, default=222, help='Task#')
+    parser.add_argument('--dimension', type=int, default=50, help='Dimension#')
+    parser.add_argument('--n_classes', type=int, default=10, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=16, help='Task#')
+    parser.add_argument('--total_epoch', type=int, default=50, help='Task#')
+    parser.add_argument('--path_length', type=int, default=10, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
+    parser.add_argument('--max_norm', type=float, default=50, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.05, help='Task#')
+    parser.add_argument('--update_method', type=str, default='sgd', help='Task#')
+
+
+    args=parser.parse_args()
