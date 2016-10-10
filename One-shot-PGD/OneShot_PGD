@@ -1,0 +1,13 @@
+#coding=utf8
+import lasagne
+import numpy as np
+import theano
+import theano.tensor as T
+from sklearn.preprocessing import LabelBinarizer,label_binarize
+
+def get_dataset(dimention):
+    x=np.random.random((10000,dimention))
+    y=np.zeros((10000))
+    for idx,i in enumerate(x):
+        y=int(x[0]/0.1)
+    return x,y
