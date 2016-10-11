@@ -49,7 +49,8 @@ class Model:
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.dimension))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.dimension])
         l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_range_mu = lasagne.layers.DenseLayer(l_range_dense1,self.n_classes,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense1,self.dimension,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid)
+        l_range_hidden=l_range_dense2
 
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
 
