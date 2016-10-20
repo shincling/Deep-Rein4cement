@@ -40,6 +40,7 @@ class Model:
         x_range=T.tensor3()
         x_action=T.tensor3()
         x_reward=T.vector()
+        x_memory=T.tensor4()
 
         x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.dimension),dtype=theano.config.floatX),borrow=True)
         x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
@@ -47,27 +48,29 @@ class Model:
         x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.dimension),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
-        D1, D2 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
+        D1, D2, D3 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.dimension))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.dimension])
-        l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense1,self.dimension,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.dimension]) #[bs*path_length,dimension]
+        # l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.dimension])
         # l_range_mu = lasagne.layers.DenseLayer(l_range_hidden,self.n_slot,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
 
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
         l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classe,self.dimension))
         l_range_memory = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.n_classe,self.dimension])
-        l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1)
+        l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
+        l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classe,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
-        l_range_mu = lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.n_classes])
-        probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range_shared})
+        probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         givens = {
             x_range: x_range_shared,
             x_action: x_range_action,
-            x_reward:x_range_reward
+            x_reward:x_range_reward,
+            x_memory:x_range_memory
         }
         cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
         grads=T.grad(cost,params)
