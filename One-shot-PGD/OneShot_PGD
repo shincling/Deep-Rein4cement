@@ -122,10 +122,10 @@ class Model:
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]]).repeat(path_length,axis=1)
                 memory_0=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
-                self.x_range_shared.set_value(xx_batch)
+                self.x_range_shared.set_value(xx_batch_0)
                 self.x_range_memory.set_value(memory_0)
                 probbb=self.output_model_range()[0]
-                pass
+                print 'hhh'
                 '''
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
