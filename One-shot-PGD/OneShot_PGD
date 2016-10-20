@@ -24,13 +24,16 @@ def get_dataset(dimention=10):
     for one_sample in range(total_roads):
         label_list=random.sample(range(dimention),total_label)
         one_shoot_label=label_list[-1]
-        for i in range(path_length-2):
-            label=np.random.choice(label_list[:-1])
-            final_y[one_sample,i]=label
-            final_x[one_sample,i,:]=np.random.choice(order_list[label])
-        insert_idx=np.random.randint(0,path_length-2)
-
-
+        insert_idx=np.random.randint(0,path_length-1)
+        final_x[one_sample,insert_idx]=random.sample(order_list[one_shoot_label],1)[0]
+        final_y[one_sample,insert_idx]=one_shoot_label
+        final_x[one_sample,-1]=random.sample(order_list[one_shoot_label],1)[0]
+        final_y[one_sample,-1]=one_shoot_label
+        for i in range(path_length-1):
+            if i!=insert_idx:
+                label=np.random.choice(label_list[:-1])
+                final_y[one_sample,i]=label
+                final_x[one_sample,i,:]=random.sample(order_list[label],1)[0]
     return (x,y)
 
 
