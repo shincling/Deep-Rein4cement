@@ -42,7 +42,7 @@ class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
                  n_paths=1000,max_norm=50,lr=0.05,update_method='sgd',std=0.5,**kwargs):
         self.dimension=dimension
-        self.n_classe=n_classes
+        self.n_classes=n_classes
         self.n_slot=n_classes
         self.batch_size=batch_size
         self.n_epoch=n_epoch
@@ -51,6 +51,7 @@ class Model:
         self.max_norm=max_norm
         self.lr=lr
         self.std=std
+        self.x_dim=10
 
         if update_method=='sgd':
             self.update_method=lasagne.updates.sgd
@@ -60,7 +61,8 @@ class Model:
             self.update_method=lasagne.updates.adadelta
         elif update_method=='rmsprop':
             self.update_method=lasagne.updates.rmsprop
-        
+        self.build()
+
     def build(self):
         x_range=T.tensor3()
         x_action=T.tensor3()
@@ -74,18 +76,18 @@ class Model:
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
         D1, D2, D3 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
-        l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.dimension))
-        l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.dimension])
+        l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim))
+        l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.x_dim])
         # l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
-        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.dimension])
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
         # l_range_mu = lasagne.layers.DenseLayer(l_range_hidden,self.n_slot,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
 
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
-        l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classe,self.dimension))
-        l_range_memory = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.n_classe,self.dimension])
+        l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes,self.x_dim))
+        l_range_memory = lasagne.layers.ReshapeLayer(l_range_memory_in,[self.batch_size*self.path_length,self.n_classes,self.x_dim])
         l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
-        l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classe,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
         l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
@@ -102,7 +104,8 @@ class Model:
         scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
         updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
 
-        self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+        self.output_model_range = theano.function([],[probas_range,cost],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+        # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
 
 
     def train(self):
@@ -118,7 +121,7 @@ class Model:
                 # 初始化两个循环的参数，state和概率
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]]).repeat(path_length,axis=1)
-                memory_0=np.zeros((batch_size,path_length,self.n_classe,xx.shape[-1]))
+                memory_0=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
                 self.x_range_shared.set_value(xx_batch)
                 self.x_range_memory.set_value(memory_0)
                 probbb=self.output_model_range()[0]
