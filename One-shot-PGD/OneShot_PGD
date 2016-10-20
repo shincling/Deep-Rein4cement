@@ -16,9 +16,9 @@ def get_dataset(dimention=10):
         y=int(i[0]/0.1)
         order_list[y].append(i)
 
-    total_roads=100
+    total_roads=500
     path_length=10
-    total_label=5
+    total_label=3
     final_x=np.zeros((total_roads,path_length,dimention))
     final_y=np.zeros((total_roads,path_length))
     for one_sample in range(total_roads):
@@ -34,7 +34,7 @@ def get_dataset(dimention=10):
                 label=np.random.choice(label_list[:-1])
                 final_y[one_sample,i]=label
                 final_x[one_sample,i,:]=random.sample(order_list[label],1)[0]
-    return (x,y)
+    return final_x,np.int32(final_y)
 
 
 
@@ -67,10 +67,10 @@ class Model:
         x_reward=T.vector()
         x_memory=T.tensor4()
 
-        x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.dimension),dtype=theano.config.floatX),borrow=True)
-        x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
-        x_range_reward=theano.shared(np.zeros(self.batch_size,dtype=theano.config.floatX),borrow=True)
-        x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.dimension),dtype=theano.config.floatX),borrow=True)
+        self.x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.dimension),dtype=theano.config.floatX),borrow=True)
+        self.x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
+        self.x_range_reward=theano.shared(np.zeros(self.batch_size,dtype=theano.config.floatX),borrow=True)
+        self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.dimension),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
         D1, D2, D3 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
@@ -92,37 +92,38 @@ class Model:
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         givens = {
-            x_range: x_range_shared,
-            x_action: x_range_action,
-            x_reward:x_range_reward,
-            x_memory:x_range_memory
+            x_range: self.x_range_shared,
+            x_action: self.x_range_action,
+            x_reward: self.x_range_reward,
+            x_memory: self.x_range_memory
         }
         cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
         grads=T.grad(cost,params)
         scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
         updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
 
-        output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
-        pass
+        self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+
 
     def train(self):
         batch_size=self.batch_size
-
-        xx, yy = get_dataset(10)
-
+        n_paths=self.n_paths
+        path_length=self.path_length
+        xx, yy = get_dataset(10) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
             np.random.shuffle(xx)
             for idx_batch in range(batch_total_number):
-                x_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 # 初始化两个循环的参数，state和概率
-                # x_shared.set_value(x_batch)
-                # probs_sample_0 = output_model()
-                xx_batch=x_batch.reshape([x_batch.shape[0],1,x_batch.shape[1]]).repeat(path_lenth,axis=1)
-                x_range_shared.set_value(xx_batch)
-                probbb=output_model_range()[0]
-
+                xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]]).repeat(path_length,axis=1)
+                memory_0=np.zeros((batch_size,path_length,self.n_classe,xx.shape[-1]))
+                self.x_range_shared.set_value(xx_batch)
+                self.x_range_memory.set_value(memory_0)
+                probbb=self.output_model_range()[0]
+                pass
+                '''
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
@@ -174,9 +175,8 @@ class Model:
                     print '\n\n'
 
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
-
+            '''
 if __name__=='__main__':
-    xx, yy = get_dataset(10)
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
     parser.add_argument('--dimension', type=int, default=50, help='Dimension#')
