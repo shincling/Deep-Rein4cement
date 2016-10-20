@@ -1,17 +1,39 @@
 #coding=utf8
+import random
 import argparse
+import time
 import lasagne
 import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 
-def get_dataset(dimention):
+def get_dataset(dimention=10):
+    order_list=[[],[],[],[],[],[],[],[],[],[]]
     x=np.random.random((10000,dimention))
     y=np.zeros((10000))
-    for i in enumerate(x):
+    for i in (x):
         y=int(i[0]/0.1)
-    return x,y
+        order_list[y].append(i)
+
+    total_roads=100
+    path_length=10
+    total_label=5
+    final_x=np.zeros((total_roads,path_length,dimention))
+    final_y=np.zeros((total_roads,path_length))
+    for one_sample in range(total_roads):
+        label_list=random.sample(range(dimention),total_label)
+        one_shoot_label=label_list[-1]
+        for i in range(path_length-2):
+            label=np.random.choice(label_list[:-1])
+            final_y[one_sample,i]=label
+            final_x[one_sample,i,:]=np.random.choice(order_list[label])
+        insert_idx=np.random.randint(0,path_length-2)
+
+
+    return (x,y)
+
+
 
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
@@ -80,8 +102,78 @@ class Model:
         output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
         pass
 
+    def train(self):
+        batch_size=self.batch_size
+
+        xx, yy = get_dataset(10)
+
+        for epoch in range(self.n_epoch):
+            begin_time = time.time()
+            batch_total_number = len(xx) / batch_size
+            np.random.shuffle(xx)
+            for idx_batch in range(batch_total_number):
+                x_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                # 初始化两个循环的参数，state和概率
+                # x_shared.set_value(x_batch)
+                # probs_sample_0 = output_model()
+                xx_batch=x_batch.reshape([x_batch.shape[0],1,x_batch.shape[1]]).repeat(path_lenth,axis=1)
+                x_range_shared.set_value(xx_batch)
+                probbb=output_model_range()[0]
+
+                tmp_cost, tmp_result, tmp_reward = 0, 0, 0
+                for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
+                    # 但是第一步的初始化状态都是一样的
+                    total_state = np.zeros([batch_size, path_lenth, dimention])
+                    total_reward = np.zeros([batch_size, path_lenth])
+                    total_action = np.zeros([batch_size, path_lenth])
+                    total_probs = np.zeros([batch_size, path_lenth, n_classes])
+                    total_state[:, 0, :] = x_batch
+                    x_shared.set_value(x_batch)
+                    probs_sample_0 = output_model()
+                    total_probs[:, 0, :] = probs_sample_0
+                    for t in range(path_lenth):  # 进行了10步
+                        for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
+                            now_state = total_state[idx, t].copy()
+                            action, new_state, reward = sample_one_path(now_state, prob)
+                            # action, new_state, reward = sample_one_path_plus(now_state, prob)
+                            # action是这一步采取的动作，state是进入的新的状态，prob四
+                            total_action[idx, t] = action
+                            total_reward[idx, t] = reward
+                            # 更新state和概率,下一个循环使用
+                            if t != path_lenth - 1:
+                                total_state[idx, t + 1] = new_state
+                            del new_state, now_state
+
+                        if t != path_lenth - 1:
+                            x_shared.set_value(total_state[:, t + 1])
+                            total_probs[:, t + 1, :] = output_model()
+
+                    x_range_shared.set_value(total_state)
+                    x_range_action.set_value(action_to_vector(total_action, n_classes))
+                    x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
+                    aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
+                    espect_reward = np.mean(np.float32(reward_count(total_reward,path_lenth,discout=discout)), axis=0)
+                    _, cost = output_model_range()
+                    tmp_cost += cost
+                    tmp_result += aver_reward
+                    tmp_reward += espect_reward
+                    # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+                    # print _[0]
+                    # print '\n\n\n'
+                print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
+                # if tmp_result / n_paths > 10:
+                if tmp_result / n_paths +10.1 > 10:
+                    print total_state[0]
+                    print total_action[0]
+                    print _[0]
+                    print total_reward[0]
+                    # print total_probs[0]
+                    print '\n\n'
+
+            print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
 if __name__=='__main__':
+    xx, yy = get_dataset(10)
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
     parser.add_argument('--dimension', type=int, default=50, help='Dimension#')
