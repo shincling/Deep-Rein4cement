@@ -112,6 +112,8 @@ class Model:
         batch_size=self.batch_size
         n_paths=self.n_paths
         path_length=self.path_length
+        dimention=self.x_dim
+        n_classes=self.n_classes
         xx, yy = get_dataset(10) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
@@ -120,25 +122,28 @@ class Model:
             for idx_batch in range(batch_total_number):
                 # 初始化两个循环的参数，state和概率
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]]).repeat(path_length,axis=1)
-                memory_0=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
-                self.x_range_shared.set_value(xx_batch_0)
-                self.x_range_memory.set_value(memory_0)
+                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]])
+                xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
+                memory_0=np.zeros((batch_size,self.n_classes,xx.shape[-1]))
+                memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
+                self.x_range_shared.set_value(xx_batch_0_repeat)
+                self.x_range_memory.set_value(memory_0_repeat)
                 probbb=self.output_model_range()[0]
-                print 'hhh'
-                '''
+                probs_sample_0=probbb[:,0]
+
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
-                    total_state = np.zeros([batch_size, path_lenth, dimention])
-                    total_reward = np.zeros([batch_size, path_lenth])
-                    total_action = np.zeros([batch_size, path_lenth])
-                    total_probs = np.zeros([batch_size, path_lenth, n_classes])
-                    total_state[:, 0, :] = x_batch
-                    x_shared.set_value(x_batch)
-                    probs_sample_0 = output_model()
+                    total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
+                    total_reward = np.zeros([batch_size, path_length])
+                    total_action = np.zeros([batch_size, path_length])
+                    total_probs = np.zeros([batch_size, path_length, n_classes])
+
+                    total_state[:, 0, :] = np.concatenate((memory_0,xx_batch_0),axis=1)
+                    '''state是[bs,class+1,x_dim]尺度的东西，第二个维度前class个是memory状态,最后一个是当前输入的隐层表达'''
                     total_probs[:, 0, :] = probs_sample_0
-                    for t in range(path_lenth):  # 进行了10步
+
+                    for t in range(path_length):  # 进行了10步
                         for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                             now_state = total_state[idx, t].copy()
                             action, new_state, reward = sample_one_path(now_state, prob)
@@ -178,7 +183,16 @@ class Model:
                     print '\n\n'
 
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
-            '''
+
+    def sample_one_path(self,now_state, prob):
+        action=0
+        new_memory_state=np.zeros([self.n_classes,self.x_dim])
+        reward=0.0
+
+        action=np.random.choice(range(self.n_classes),prob)
+
+
+        return action,new_state,reward
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
