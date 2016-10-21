@@ -109,7 +109,7 @@ class Model:
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
         new_memory_state=np.zeros([self.n_classes,self.x_dim])
-        new_memory_label=np.zeros([self.path_length,self.n_classes])
+        new_memory_label=np.zeros([self.n_classes,self.path_length])
         reward=0.0
 
         now_memory_label_count=np.int32(now_memory_label!=-1).sum(axis=1)#计算当前memory每个slot各有多少个数据存储
@@ -136,6 +136,7 @@ class Model:
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
+        new_memory_state=now_state[:-1]
         now_memory_label[action][index_to_insert]=this_label
         new_memory_label=now_memory_label
 
