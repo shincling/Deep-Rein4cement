@@ -148,21 +148,25 @@ class Model:
                         for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                             now_state = total_state[idx, t].copy()
                             now_memory_label=total_memory_label[idx,t].copy()
-                            action, new_state, reward, new_memory_label = sample_one_path(now_state,now_memory_label, prob)
-
+                            action, new_memory_state, reward, new_memory_label = sample_one_path(now_state,now_memory_label, prob)
                             # action, new_state, reward = sample_one_path_plus(now_state, prob)
                             # action是这一步采取的动作，state是进入的新的状态，prob四
                             total_action[idx, t] = action
                             total_reward[idx, t] = reward
                             # 更新state和概率,下一个循环使用
-                            if t != path_lenth - 1:
+                            if t != path_length - 1:
+                                #TODO:这里需要模型中添加一个只从x得到隐层表示的小函数
+                                new_h=self.output_model_range(xx_batch[idx,t+1])
+                                new_state=np.concatenate((new_memory_state,new_h),axis=1)
                                 total_state[idx, t + 1] = new_state
-                            del new_state, now_state
+                                total_memory_label[idx,t+1]=new_memory_label
+                            del new_memory_state, now_state,new_memory_label
 
-                        if t != path_lenth - 1:
-                            x_shared.set_value(total_state[:, t + 1])
-                            total_probs[:, t + 1, :] = output_model()
-
+                        if t != path_length - 1:
+                            self.x_range_shared.set_value(total_state[:, t + 1,0:-1,:])
+                            self.x_range_memory.set_value(total_state[:,t+1,-1,:])
+                            total_probs[:, t + 1, :] = self.output_model_range()[0]
+                    '''
                     x_range_shared.set_value(total_state)
                     x_range_action.set_value(action_to_vector(total_action, n_classes))
                     x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
@@ -175,6 +179,7 @@ class Model:
                     # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
                     # print _[0]
                     # print '\n\n\n'
+                    '''
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
                 # if tmp_result / n_paths > 10:
                 if tmp_result / n_paths +10.1 > 10:
