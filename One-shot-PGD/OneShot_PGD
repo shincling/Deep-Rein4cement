@@ -69,10 +69,10 @@ class Model:
         x_reward=T.vector()
         x_memory=T.tensor4()
 
-        self.x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.dimension),dtype=theano.config.floatX),borrow=True)
+        self.x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.x_dim),dtype=theano.config.floatX),borrow=True)
         self.x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
         self.x_range_reward=theano.shared(np.zeros(self.batch_size,dtype=theano.config.floatX),borrow=True)
-        self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.dimension),dtype=theano.config.floatX),borrow=True)
+        self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.x_dim),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
         D1, D2, D3 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
@@ -195,9 +195,9 @@ class Model:
                             # 更新state和概率,下一个循环使用
                             if t != path_length - 1:
                                 #TODO:这里需要模型中添加一个只从x得到隐层表示的小函数
-                                new_h=self.output_model_range(xx_batch[idx,t+1])
-                                new_state=np.concatenate((new_memory_state,new_h),axis=1)
-                                total_state[idx, t + 1] = new_state
+                                # new_h=self.output_model_range(xx_batch[idx,t+1])
+                                # new_state=np.concatenate((new_memory_state,new_h),axis=1)
+                                # total_state[idx, t + 1] = new_state
                                 total_memory_label[idx,t+1]=new_memory_label
                             del new_memory_state, now_state,new_memory_label
 
