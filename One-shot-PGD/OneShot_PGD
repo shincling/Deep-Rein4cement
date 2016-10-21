@@ -107,6 +107,19 @@ class Model:
         self.output_model_range = theano.function([],[probas_range,cost],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
         # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
 
+    def sample_one_path(self,now_state,now_memory_label, prob):
+        new_memory_state=np.zeros([self.n_classes,self.x_dim])
+        new_memory_label=np.zeros([self.path_length,self.n_classes])
+        reward=0.0
+
+        action=np.random.choice(range(self.n_classes),prob)
+        index_to_insert=int(np.argwhere(now_memory_label[action]==-1)[0])
+        now_memory_label[action][index_to_insert]=None
+        if action==0:
+            pass
+
+
+        return action,new_memory_state,reward,new_memory_label
 
     def train(self):
         batch_size=self.batch_size
@@ -114,14 +127,18 @@ class Model:
         path_length=self.path_length
         dimention=self.x_dim
         n_classes=self.n_classes
-        xx, yy = get_dataset(10) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        xx, yy = get_dataset(dimention) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
-            np.random.shuffle(xx)
+            zipp=zip(xx,yy)
+            random.shuffle(zipp)
+            xx=np.array([one[0] for one in zipp])
+            yy=np.array([one[1] for one in zipp])
             for idx_batch in range(batch_total_number):
                 # 初始化两个循环的参数，state和概率
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]])
                 xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
                 memory_0=np.zeros((batch_size,self.n_classes,xx.shape[-1]))
@@ -135,7 +152,7 @@ class Model:
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
                     total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
-                    total_memory_label=np.zeors([batch_size,path_length,n_classes])-1 #取作-1，标志着还没有存放过样本
+                    total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length])-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
                     total_action = np.zeros([batch_size, path_length])
                     total_probs = np.zeros([batch_size, path_length, n_classes])
@@ -148,7 +165,7 @@ class Model:
                         for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                             now_state = total_state[idx, t].copy()
                             now_memory_label=total_memory_label[idx,t].copy()
-                            action, new_memory_state, reward, new_memory_label = sample_one_path(now_state,now_memory_label, prob)
+                            action, new_memory_state, reward, new_memory_label = self.sample_one_path(now_state,now_memory_label, prob)
                             # action, new_state, reward = sample_one_path_plus(now_state, prob)
                             # action是这一步采取的动作，state是进入的新的状态，prob四
                             total_action[idx, t] = action
@@ -192,17 +209,6 @@ class Model:
 
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
-    def sample_one_path(self,now_state, prob):
-        new_memory_state=np.zeros([self.n_classes,self.x_dim])
-        new_memory_label=np.zeros([self.path_length,self.n_classes])
-        reward=0.0
-
-        action=np.random.choice(range(self.n_classes),prob)
-        if action==0:
-            pass
-
-
-        return action,new_memory_state,reward,new_memory_label
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -210,7 +216,7 @@ if __name__=='__main__':
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=16, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=50, help='Task#')
-    parser.add_argument('--path_length', type=int, default=10, help='Task#')
+    parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.05, help='Task#')
