@@ -135,6 +135,7 @@ class Model:
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
                     total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
+                    total_memory_label=np.zeors([batch_size,path_length,n_classes])-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
                     total_action = np.zeros([batch_size, path_length])
                     total_probs = np.zeros([batch_size, path_length, n_classes])
@@ -146,7 +147,9 @@ class Model:
                     for t in range(path_length):  # 进行了10步
                         for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                             now_state = total_state[idx, t].copy()
-                            action, new_state, reward = sample_one_path(now_state, prob)
+                            now_memory_label=total_memory_label[idx,t].copy()
+                            action, new_state, reward, new_memory_label = sample_one_path(now_state,now_memory_label, prob)
+
                             # action, new_state, reward = sample_one_path_plus(now_state, prob)
                             # action是这一步采取的动作，state是进入的新的状态，prob四
                             total_action[idx, t] = action
@@ -185,14 +188,16 @@ class Model:
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
     def sample_one_path(self,now_state, prob):
-        action=0
         new_memory_state=np.zeros([self.n_classes,self.x_dim])
+        new_memory_label=np.zeros([self.path_length,self.n_classes])
         reward=0.0
 
         action=np.random.choice(range(self.n_classes),prob)
+        if action==0:
+            pass
 
 
-        return action,new_state,reward
+        return action,new_memory_state,reward,new_memory_label
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
