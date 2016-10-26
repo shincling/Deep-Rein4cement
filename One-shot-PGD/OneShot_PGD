@@ -16,11 +16,6 @@ def action_to_vector(x, n_classes): #x是bs*path_length
     return result
 
 def reward_count(total_reward, length, discout=0.99):
-    '''
-    for line in range(total_reward.shape[0]):
-        for step in range(length):
-            result[line]+=total_reward[line,step]*(discout**step)
-    '''
     discout_list = np.zeros(length)
     for idx in range(discout_list.shape[0]):
         step = discout ** idx
@@ -60,7 +55,7 @@ def get_dataset(dimention=10,path_length=10):
 
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
-                 n_paths=1000,max_norm=50,lr=0.05,update_method='sgd',std=0.5,**kwargs):
+                 n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,**kwargs):
         self.dimension=dimension
         self.n_classes=n_classes
         self.n_slot=n_classes
@@ -71,6 +66,7 @@ class Model:
         self.max_norm=max_norm
         self.lr=lr
         self.std=std
+        self.discount=discount
         self.x_dim=10
 
         if update_method=='sgd':
@@ -238,10 +234,10 @@ class Model:
 
                     self.x_range_shared.set_value(xx_batch)
                     self.x_range_action.set_value(action_to_vector(total_action, n_classes))
-                    self.x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
+                    self.x_range_reward.set_value(reward_count(total_reward, length=path_length, discout=self.discount))
                     aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
-                    espect_reward = np.mean(np.float32(reward_count(total_reward,path_lenth,discout=discout)), axis=0)
-                    _, cost = output_model_range()
+                    espect_reward = np.mean(np.float32(reward_count(total_reward,path_length,discout=self.discount)), axis=0)
+                    _, cost = self.output_model_range()[:-1]
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
@@ -250,8 +246,8 @@ class Model:
                     # print '\n\n\n'
 
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
-                # if tmp_result / n_paths > 10:
-                if tmp_result / n_paths +10.1 > 10:
+
+                if tmp_result / n_paths  > 10:
                     print total_state[0]
                     print total_action[0]
                     print _[0]
@@ -272,6 +268,7 @@ if __name__=='__main__':
     parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.05, help='Task#')
+    parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.5, help='Task#')
     parser.add_argument('--update_method', type=str, default='sgd', help='Task#')
     args=parser.parse_args()
