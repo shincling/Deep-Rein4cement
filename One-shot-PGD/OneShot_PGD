@@ -179,7 +179,7 @@ class Model:
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
                     total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
-                    total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length])-1 #取作-1，标志着还没有存放过样本
+                    total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
                     total_action = np.zeros([batch_size, path_length])
                     total_probs = np.zeros([batch_size, path_length, n_classes])
