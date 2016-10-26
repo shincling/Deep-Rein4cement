@@ -8,7 +8,7 @@ import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 
-def get_dataset(dimention=10):
+def get_dataset(dimention=10,path_length=10):
     order_list=[[],[],[],[],[],[],[],[],[],[]]
     x=np.random.random((10000,dimention))
     y=np.zeros((10000))
@@ -17,7 +17,7 @@ def get_dataset(dimention=10):
         order_list[y].append(i)
 
     total_roads=500
-    path_length=10
+    # path_length=10
     total_label=3
     final_x=np.zeros((total_roads,path_length,dimention))
     final_y=np.zeros((total_roads,path_length))
@@ -121,7 +121,7 @@ class Model:
         #定义reward
         if now_memory_label[action][0]==-1:#证明是新开的一个slot
             reward=-1
-        else:
+        else: #证明action是一个已经有label的slot位置
             label_count_dict={}
             for jj in (now_memory_label[action]):
                 if jj==-1:
@@ -131,11 +131,15 @@ class Model:
                 else:
                     label_count_dict[jj]=1
             max_num=max(label_count_dict.values())
-            if label_count_dict[action]==max_num: #存在了label重合最多的slot里
+            if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                 if idx_path_length==self.path_length-1:#如果是一个样本的最后一步
                     reward=20
                 else:
                     reward=3
+            elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
+                reward=-5
+            else:#剩下的是存在一个已经有这个label的slot里，但是这个label不是最多的
+                reward=0
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
@@ -152,7 +156,7 @@ class Model:
         path_length=self.path_length
         dimention=self.x_dim
         n_classes=self.n_classes
-        xx, yy = get_dataset(dimention) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        xx, yy = get_dataset(dimention,path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
@@ -166,7 +170,7 @@ class Model:
                 # 初始化两个循环的参数，state和概率
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[1]])
+                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
                 xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
                 memory_0=np.zeros((batch_size,self.n_classes,xx.shape[-1]))
                 memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
