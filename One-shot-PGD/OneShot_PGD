@@ -80,6 +80,7 @@ class Model:
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.x_dim])
         # l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.x_dim])
         l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
         # l_range_mu = lasagne.layers.DenseLayer(l_range_hidden,self.n_slot,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
 
@@ -91,7 +92,7 @@ class Model:
         l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
-        hidden = lasagne.layers.helper.get_output(l_range_dense2, {l_range_in: x_range})
+        hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         givens = {
@@ -106,7 +107,7 @@ class Model:
         updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
 
         self.output_model_range = theano.function([],[probas_range,cost,hidden],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
-        self.output_hidden = theano.function(x_range,hidden[:,0],on_unused_input='ignore',allow_input_downcast=True)
+        self.output_hidden = theano.function([x_range],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
         # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
@@ -199,17 +200,17 @@ class Model:
                             # 更新state和概率,下一个循环使用
                             if t != path_length - 1:
                                 # TODO:这里需要模型中添加一个只从x得到隐层表示的小函数
-                                new_h=self.output_hidden(xx_batch[idx,t+1])[-1]
+                                # new_h=self.output_hidden(xx_batch[idx,t+1])[-1]
                                 # new_state=np.concatenate((new_memory_state,new_h),axis=1)
                                 total_state[idx, t + 1,:-1] = new_memory_state
                                 total_memory_label[idx,t+1]=new_memory_label
                             del new_memory_state, now_state,new_memory_label
 
                         if t != path_length - 1:
-                            total_state[idx, t + 1,-1] = self.output_hidden(xx_batch[idx,t+1])
-                            self.x_range_shared.set_value(total_state[:, t + 1,-1,:])
-                            self.x_range_memory.set_value(total_state[:,t+1,:-1,:])
-                            total_probs[:, t + 1, :] = self.output_model_range()[0]
+                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t].reshape(batch_size,1,dimention).repeat(path_length,axis=1))[0]
+                            self.x_range_shared.set_value(xx_batch[:,t].reshape(batch_size,1,dimention).repeat(path_length,axis=1))
+                            self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,dimention).repeat(path_length,axis=1))
+                            total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
                     '''
                     x_range_shared.set_value(total_state)
                     x_range_action.set_value(action_to_vector(total_action, n_classes))
