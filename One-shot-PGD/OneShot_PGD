@@ -271,7 +271,7 @@ if __name__=='__main__':
     parser.add_argument('--lr', type=float, default=0.1, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.5, help='Task#')
-    parser.add_argument('--update_method', type=str, default='adagrad', help='Task#')
+    parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
