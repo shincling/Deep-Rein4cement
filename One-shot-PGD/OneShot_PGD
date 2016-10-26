@@ -92,6 +92,7 @@ class Model:
 
         '''模型的总体参数和更新策略等'''
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory})
+        hidden = lasagne.layers.helper.get_output(l_range_hidden, {l_range_in: x_range})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         givens = {
             x_range: self.x_range_shared,
