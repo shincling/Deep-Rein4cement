@@ -8,6 +8,26 @@ import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 
+def action_to_vector(x, n_classes): #x是bs*path_length
+    result = np.zeros([x.shape[0], x.shape[1], n_classes])
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+    return result
+
+def reward_count(total_reward, length, discout=0.99):
+    '''
+    for line in range(total_reward.shape[0]):
+        for step in range(length):
+            result[line]+=total_reward[line,step]*(discout**step)
+    '''
+    discout_list = np.zeros(length)
+    for idx in range(discout_list.shape[0]):
+        step = discout ** idx
+        discout_list[idx] = step
+    result = np.dot(total_reward, discout_list)
+    return result
+
 def get_dataset(dimention=10,path_length=10):
     order_list=[[],[],[],[],[],[],[],[],[],[]]
     x=np.random.random((10000,dimention))
@@ -215,10 +235,10 @@ class Model:
                             self.x_range_shared.set_value(xx_batch[:,t].reshape(batch_size,1,dimention).repeat(path_length,axis=1))
                             self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,dimention).repeat(path_length,axis=1))
                             total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
-                    '''
-                    x_range_shared.set_value(total_state)
-                    x_range_action.set_value(action_to_vector(total_action, n_classes))
-                    x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
+
+                    self.x_range_shared.set_value(xx_batch)
+                    self.x_range_action.set_value(action_to_vector(total_action, n_classes))
+                    self.x_range_reward.set_value(reward_count(total_reward, length=path_lenth, discout=discout))
                     aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
                     espect_reward = np.mean(np.float32(reward_count(total_reward,path_lenth,discout=discout)), axis=0)
                     _, cost = output_model_range()
@@ -228,7 +248,7 @@ class Model:
                     # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
                     # print _[0]
                     # print '\n\n\n'
-                    '''
+
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
                 # if tmp_result / n_paths > 10:
                 if tmp_result / n_paths +10.1 > 10:
