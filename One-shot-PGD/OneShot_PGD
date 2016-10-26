@@ -91,8 +91,8 @@ class Model:
         l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
+        hidden = lasagne.layers.helper.get_output(l_range_dense2, {l_range_in: x_range})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory})
-        hidden = lasagne.layers.helper.get_output(l_range_hidden, {l_range_in: x_range})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         givens = {
             x_range: self.x_range_shared,
@@ -105,7 +105,8 @@ class Model:
         scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
         updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
 
-        self.output_model_range = theano.function([],[probas_range,cost],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+        self.output_model_range = theano.function([],[probas_range,cost,hidden],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+        self.output_hidden = theano.function(x_range,hidden[:,0],on_unused_input='ignore',allow_input_downcast=True)
         # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
@@ -154,11 +155,13 @@ class Model:
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
+            '''每一轮的shuffle策略'''
             zipp=zip(xx,yy)
             random.shuffle(zipp)
             xx=np.array([one[0] for one in zipp])
             yy=np.array([one[1] for one in zipp])
-            for idx_batch in range(batch_total_number):
+
+            for idx_batch in range(batch_total_number):#对于每一个batch
                 # 初始化两个循环的参数，state和概率
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -195,16 +198,17 @@ class Model:
                             total_reward[idx, t] = reward
                             # 更新state和概率,下一个循环使用
                             if t != path_length - 1:
-                                #TODO:这里需要模型中添加一个只从x得到隐层表示的小函数
-                                # new_h=self.output_model_range(xx_batch[idx,t+1])
+                                # TODO:这里需要模型中添加一个只从x得到隐层表示的小函数
+                                new_h=self.output_hidden(xx_batch[idx,t+1])[-1]
                                 # new_state=np.concatenate((new_memory_state,new_h),axis=1)
-                                # total_state[idx, t + 1] = new_state
+                                total_state[idx, t + 1,:-1] = new_memory_state
                                 total_memory_label[idx,t+1]=new_memory_label
                             del new_memory_state, now_state,new_memory_label
 
                         if t != path_length - 1:
-                            self.x_range_shared.set_value(total_state[:, t + 1,0:-1,:])
-                            self.x_range_memory.set_value(total_state[:,t+1,-1,:])
+                            total_state[idx, t + 1,-1] = self.output_hidden(xx_batch[idx,t+1])
+                            self.x_range_shared.set_value(total_state[:, t + 1,-1,:])
+                            self.x_range_memory.set_value(total_state[:,t+1,:-1,:])
                             total_probs[:, t + 1, :] = self.output_model_range()[0]
                     '''
                     x_range_shared.set_value(total_state)
