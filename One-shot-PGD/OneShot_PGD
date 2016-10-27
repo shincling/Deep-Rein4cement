@@ -122,7 +122,8 @@ class Model:
         scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
         updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
 
-        self.output_model_range = theano.function([],[probas_range,cost,hidden],updates=updates,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+        self.output_model_range = theano.function([],[probas_range,cost,hidden],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
+        self.output_model_range_updates = theano.function([],[probas_range,cost,hidden],updates=updates,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
         self.output_hidden = theano.function([x_range],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
         # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
 
@@ -210,7 +211,7 @@ class Model:
                     '''state是[bs,class+1,x_dim]尺度的东西，第二个维度前class个是memory状态,最后一个是当前输入的隐层表达'''
                     total_probs[:, 0, :] = probs_sample_0
 
-                    for t in range(path_length):  # 进行了10步
+                    for t in range(path_length):  # 进行了path_length步
                         for idx, prob in enumerate(total_probs[:, t, :]):  # 对于batch里的每一个样本
                             now_state = total_state[idx, t].copy()
                             now_memory_label=total_memory_label[idx,t].copy()
@@ -239,7 +240,7 @@ class Model:
                     self.x_range_reward.set_value(reward_count(total_reward, length=path_length, discout=self.discount))
                     aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
                     espect_reward = np.mean(np.float32(reward_count(total_reward,path_length,discout=self.discount)), axis=0)
-                    _, cost = self.output_model_range()[:-1]
+                    _, cost = self.output_model_range_updates()[:-1]
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
