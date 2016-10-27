@@ -205,7 +205,8 @@ class Model:
                     total_action = np.zeros([batch_size, path_length])
                     total_probs = np.zeros([batch_size, path_length, n_classes])
 
-                    total_state[:, 0, :] = np.concatenate((memory_0,xx_batch_0),axis=1)
+                    total_state[:, 0, -1] =self.output_hidden(xx_batch_0_repeat)[0]
+                    total_state[:, 0, :-1] = memory_0
                     '''state是[bs,class+1,x_dim]尺度的东西，第二个维度前class个是memory状态,最后一个是当前输入的隐层表达'''
                     total_probs[:, 0, :] = probs_sample_0
 
@@ -252,8 +253,8 @@ class Model:
                     print total_state[0][-1]
                     print total_action[0]
                     print total_memory_label[0][-1]
-                    print _[0]
                     print total_reward[0]
+                    print _[0]
                     # print total_probs[0]
                     print '\n\n'
 
