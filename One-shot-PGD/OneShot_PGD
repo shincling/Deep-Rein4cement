@@ -31,7 +31,7 @@ def get_dataset(dimention=10,path_length=10):
         y=int(i[0]/0.1)
         order_list[y].append(i)
 
-    total_roads=50000
+    total_roads=1000
     # path_length=10
     total_label=3
     final_x=np.zeros((total_roads,path_length,dimention))
@@ -150,6 +150,7 @@ class Model:
             if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                 if idx_path_length==self.path_length-1:#如果是一个样本的最后一步
                     reward=20
+                    # print '20~~~~~!\n'
                 else:
                     reward=3
             elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
@@ -247,10 +248,10 @@ class Model:
 
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
 
-                if tmp_result / n_paths  > 3:
-                    print total_state[0]
+                if tmp_result / n_paths  > 0:
+                    print total_state[0][-1]
                     print total_action[0]
-                    print total_memory_label[0]
+                    print total_memory_label[0][-1]
                     print _[0]
                     print total_reward[0]
                     # print total_probs[0]
@@ -268,7 +269,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.1, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.5, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
