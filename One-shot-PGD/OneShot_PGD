@@ -51,6 +51,18 @@ def get_dataset(dimention=10,path_length=10):
                 final_x[one_sample,i,:]=random.sample(order_list[label],1)[0]
     return final_x,np.int32(final_y)
 
+class BatchedDotLayer(lasagne.layers.MergeLayer):
+
+    def __init__(self, incomings, **kwargs):
+        super(BatchedDotLayer, self).__init__(incomings, **kwargs)
+        if len(incomings) != 2:
+            raise NotImplementedError
+
+    def get_output_shape_for(self, input_shapes):
+        return (input_shapes[1][0], input_shapes[1][2])
+
+    def get_output_for(self, inputs, **kwargs):
+        return T.batched_dot(inputs[0], inputs[1])
 
 
 class Model:
@@ -104,10 +116,15 @@ class Model:
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
         l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes,self.x_dim))
         l_range_memory = lasagne.layers.ReshapeLayer(l_range_memory_in,[self.batch_size*self.path_length,self.n_classes,self.x_dim])
-        l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
-        l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
-        l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
-        l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
+        if 0:
+            l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
+            l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.sigmoid)
+            l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+            l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
+        if 1:
+            l_range_status=BatchedDotLayer((l_range_memory,l_range_hidden)) #[bs*pl,(n_class+1),dim]
+            l_range_mu=lasagne.layers.NonlinearityLayer(l_range_status,self.n_classes,nonlinearity=lasagne.nonlinearities.softmax)
+            l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range})
@@ -153,13 +170,13 @@ class Model:
             if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                 if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
                     reward=200
-                    print '20~~~~~!\n'
+                    print '200~~~~!\n'
                 else:
                     reward=3
             elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
                 reward=-5
             else:#剩下的是存在一个已经有这个label的slot里，但是这个label不是最多的
-                reward=0
+                reward=-2
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
