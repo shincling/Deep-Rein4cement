@@ -122,7 +122,7 @@ class Model:
         cost=-T.mean(T.sum(T.sum(T.log(probas_range)*x_action,axis=2),axis=1)*x_reward)
         grads=T.grad(cost,params)
         scaled_grads = lasagne.updates.total_norm_constraint(grads, self.max_norm)
-        updates = lasagne.updates.adagrad(scaled_grads, params, learning_rate=self.lr)
+        updates = self.update_method(scaled_grads, params, learning_rate=self.lr)
 
         self.output_model_range = theano.function([],[probas_range,cost,hidden],givens=givens,on_unused_input='ignore',allow_input_downcast=True)
         self.output_model_range_updates = theano.function([],[probas_range,cost,hidden],updates=updates,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
