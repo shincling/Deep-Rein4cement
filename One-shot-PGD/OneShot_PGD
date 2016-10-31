@@ -152,8 +152,8 @@ class Model:
             max_num=max(label_count_dict.values())
             if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                 if idx_path_length==self.path_length-1:#如果是一个样本的最后一步
-                    reward=20
-                    # print '20~~~~~!\n'
+                    reward=200
+                    print '20~~~~~!\n'
                 else:
                     reward=3
             elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
@@ -194,14 +194,15 @@ class Model:
                 xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
                 memory_0=np.zeros((batch_size,self.n_classes,xx.shape[-1]))
                 memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
-                self.x_range_shared.set_value(xx_batch_0_repeat)
-                self.x_range_memory.set_value(memory_0_repeat)
-                probbb=self.output_model_range()[0]
-                probs_sample_0=probbb[:,0]
 
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
+                    self.x_range_shared.set_value(xx_batch_0_repeat)
+                    self.x_range_memory.set_value(memory_0_repeat)
+                    probbb = self.output_model_range()[0]
+                    probs_sample_0 = probbb[:, 0]
+
                     total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
                     total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
@@ -246,9 +247,14 @@ class Model:
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
-                    # print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+                    print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+                    print total_state[0][-1]
+                    print total_action[0]
+                    print total_memory_label[0][-1]
+                    print total_reward[0]
+                    print _[0]
                     # print _[0]
-                    # print '\n\n\n'
+                    print '\n\n\n'
 
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
 
@@ -266,16 +272,16 @@ class Model:
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
-    parser.add_argument('--dimension', type=int, default=50, help='Dimension#')
+    parser.add_argument('--dimension', type=int, default=20, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=16, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=1000, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=50, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=1000, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.2, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=0.5, help='Task#')
+    parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     args=parser.parse_args()
     print '*' * 80
