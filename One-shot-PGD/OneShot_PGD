@@ -32,12 +32,13 @@ def get_dataset(dimention=10,path_length=10):
         order_list[y].append(i)
 
     total_roads=1000
+    total_lables=10
     # path_length=10
     total_label=3
     final_x=np.zeros((total_roads,path_length,dimention))
     final_y=np.zeros((total_roads,path_length))
     for one_sample in range(total_roads):
-        label_list=random.sample(range(dimention),total_label)
+        label_list=random.sample(range(total_lables),total_label)
         one_shoot_label=label_list[-1]
         insert_idx=np.random.randint(0,path_length-1)
         final_x[one_sample,insert_idx]=random.sample(order_list[one_shoot_label],1)[0]
@@ -63,6 +64,7 @@ class BatchedDotLayer(lasagne.layers.MergeLayer):
 
     def get_output_for(self, inputs, **kwargs):
         return T.batched_dot(inputs[0], inputs[1])
+
 class InnerProductLayer(lasagne.layers.MergeLayer):
 
     def __init__(self, incomings, nonlinearity=None, **kwargs):
@@ -139,9 +141,9 @@ class Model:
             l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
         if 1:
-            l_range_status=InnerProductLayer((l_range_memory,l_range_hidden)) #[bs*pl,(n_class+1),dim]
-            l_range_mu=lasagne.layers.NonlinearityLayer(l_range_status,nonlinearity=lasagne.nonlinearities.softmax)
-            l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
+            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.x_dim])
+            l_range_status=InnerProductLayer((l_range_memory,l_range_hidden),nonlinearity=lasagne.nonlinearities.softmax) #[bs*pl,(n_class+1),dim]
+            l_range_mu = lasagne.layers.ReshapeLayer(l_range_status,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range})
