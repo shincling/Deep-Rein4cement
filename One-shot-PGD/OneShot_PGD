@@ -151,7 +151,7 @@ class Model:
                     label_count_dict[jj]=1
             max_num=max(label_count_dict.values())
             if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
-                if idx_path_length==self.path_length-1:#如果是一个样本的最后一步
+                if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
                     reward=200
                     print '20~~~~~!\n'
                 else:
