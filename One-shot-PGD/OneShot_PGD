@@ -91,11 +91,12 @@ class Model:
         self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.x_dim),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
-        D1, D2, D3 = lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1), lasagne.init.Normal(std=0.1)
+        D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.x_dim])
         # l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.x_dim])
         l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
         # l_range_mu = lasagne.layers.DenseLayer(l_range_hidden,self.n_slot,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
@@ -105,6 +106,7 @@ class Model:
         l_range_memory = lasagne.layers.ReshapeLayer(l_range_memory_in,[self.batch_size*self.path_length,self.n_classes,self.x_dim])
         l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
         l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+        l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
         l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
