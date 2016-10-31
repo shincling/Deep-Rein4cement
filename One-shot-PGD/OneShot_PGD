@@ -233,8 +233,8 @@ class Model:
                             del new_memory_state, now_state,new_memory_label
 
                         if t != path_length - 1:
-                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t].reshape(batch_size,1,dimention).repeat(path_length,axis=1))[0]
-                            self.x_range_shared.set_value(xx_batch[:,t].reshape(batch_size,1,dimention).repeat(path_length,axis=1))
+                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t+1].reshape(batch_size,1,dimention).repeat(path_length,axis=1))[0]
+                            self.x_range_shared.set_value(xx_batch[:,t+1].reshape(batch_size,1,dimention).repeat(path_length,axis=1))
                             self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,dimention).repeat(path_length,axis=1))
                             total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
 
