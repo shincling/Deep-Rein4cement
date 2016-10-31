@@ -63,7 +63,24 @@ class BatchedDotLayer(lasagne.layers.MergeLayer):
 
     def get_output_for(self, inputs, **kwargs):
         return T.batched_dot(inputs[0], inputs[1])
+class InnerProductLayer(lasagne.layers.MergeLayer):
 
+    def __init__(self, incomings, nonlinearity=None, **kwargs):
+        super(InnerProductLayer, self).__init__(incomings, **kwargs)
+        self.nonlinearity = nonlinearity
+        if len(incomings) != 2:
+            raise NotImplementedError
+
+    def get_output_shape_for(self, input_shapes):
+        return input_shapes[0][:2]
+
+    def get_output_for(self, inputs, **kwargs):
+        M = inputs[0]
+        u = inputs[1]
+        output = T.batched_dot(M, u)
+        if self.nonlinearity is not None:
+            output = self.nonlinearity(output)
+        return output
 
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
@@ -79,7 +96,7 @@ class Model:
         self.lr=lr
         self.std=std
         self.discount=discount
-        self.x_dim=10
+        self.x_dim=dimension
 
         if update_method=='sgd':
             self.update_method=lasagne.updates.sgd
@@ -122,8 +139,8 @@ class Model:
             l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
         if 1:
-            l_range_status=BatchedDotLayer((l_range_memory,l_range_hidden)) #[bs*pl,(n_class+1),dim]
-            l_range_mu=lasagne.layers.NonlinearityLayer(l_range_status,self.n_classes,nonlinearity=lasagne.nonlinearities.softmax)
+            l_range_status=InnerProductLayer((l_range_memory,l_range_hidden)) #[bs*pl,(n_class+1),dim]
+            l_range_mu=lasagne.layers.NonlinearityLayer(l_range_status,nonlinearity=lasagne.nonlinearities.softmax)
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
