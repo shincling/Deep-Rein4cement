@@ -84,6 +84,37 @@ class InnerProductLayer(lasagne.layers.MergeLayer):
             output = self.nonlinearity(output)
         return output
 
+class finalChoiceLayer(lasagne.layers.MergeLayer):
+    def __init__(self, incomings, W_question, W_choice,W_out, nonlinearity=lasagne.nonlinearities.tanh,**kwargs):
+        super(finalChoiceLayer, self).__init__(incomings, **kwargs) #？？？不知道这个super到底做什么的，会引入input_layers和input_shapes这些属性
+        if len(incomings) != 2:
+            raise NotImplementedError
+        # if mask_input is not None:
+        #     incomings.append(mask_input)
+        batch_size, max_sentlen ,embedding_size = self.input_shapes[0]
+        self.batch_size,self.max_sentlen,self.embedding_size=batch_size,max_sentlen,embedding_size
+        self.W_h=self.add_param(W_choice,(embedding_size,embedding_size), name='Pointer_layer_W_h')
+        self.W_q=self.add_param(W_question,(embedding_size,embedding_size), name='Pointer_layer_W_q')
+        self.W_o=self.add_param(W_out,(embedding_size,), name='Pointer_layer_W_o')
+        self.nonlinearity=nonlinearity
+        # zero_vec_tensor = T.vector()
+        self.zero_vec = np.zeros(embedding_size, dtype=theano.config.floatX)
+        # self.set_zero = theano.function([zero_vec_tensor], updates=[(x, T.set_subtensor(x[0, :], zero_vec_tensor)) for x in [self.A,self.C]])
+
+    def get_output_shape_for(self, input_shapes):
+        return (self.batch_size,self.max_sentlen)
+    def get_output_for(self, inputs, **kwargs):
+        #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
+        activation0=(T.dot(inputs[0],self.W_h))
+        activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size,self.embedding_size]).dimshuffle(0,'x',1)
+        activation=self.nonlinearity(activation0+activation1)#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        final=T.dot(activation,self.W_o) #(BS,max_sentlen)
+        # if inputs[2] is not None:
+        #     final=inputs[2]*final-(1-inputs[2])*1000000
+        alpha=lasagne.nonlinearities.softmax(final) #(BS,max_sentlen)
+        # final=T.batched_dot(alpha,inputs[0])#(BS,max_sentlen)*(BS,max_sentlen,emb_size)--(BS,emb_size)
+        return alpha
+
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
                  n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,**kwargs):
@@ -141,8 +172,8 @@ class Model:
             l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
         if 1:
-            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.x_dim])
-            l_range_status=InnerProductLayer((l_range_memory,l_range_hidden),nonlinearity=lasagne.nonlinearities.softmax) #[bs*pl,(n_class+1),dim]
+            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
+            l_range_status=finalChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_status,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
