@@ -138,7 +138,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])
         activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        activation=(activation0+activation1).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
         # if inputs[2] is not None:
         #     final=inputs[2]*final-(1-inputs[2])*1000000
@@ -266,7 +266,7 @@ class Model:
         new_memory_label=now_memory_label
 
 
-        return action,new_memory_state,reward,new_memory_label
+        return action,new_memory_state,reward+5,new_memory_label
 
     def train(self):
         batch_size=self.batch_size
@@ -337,6 +337,7 @@ class Model:
                             total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
 
                     self.x_range_shared.set_value(xx_batch)
+                    self.x_range_memory.set_value(total_state[:,:,:-1])
                     self.x_range_action.set_value(action_to_vector(total_action, n_classes))
                     self.x_range_reward.set_value(reward_count(total_reward, length=path_length, discout=self.discount))
                     aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
