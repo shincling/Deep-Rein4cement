@@ -284,7 +284,7 @@ class Model:
         path_length=self.path_length
         dimention=self.x_dim
         n_classes=self.n_classes
-        xx, yy = get_dataset(dimention=10,path_length=path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        xx, yy = get_dataset(dimention,path_length=path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
@@ -378,7 +378,7 @@ class Model:
 
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
-test_mode=1
+test_mode=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
