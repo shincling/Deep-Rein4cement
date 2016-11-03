@@ -261,7 +261,7 @@ class Model:
             if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                 if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
                     reward=20
-                    print '200~~~~!\n'
+                    # print '200~~~~!\n'
                 else:
                     reward=3
             elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
@@ -357,11 +357,11 @@ class Model:
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
                     print 'cost:{},average_reward:{}'.format(cost,aver_reward)
-                    print total_state[0][-1]
+                    # print total_state[0][-1]
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
-                    print _[0]
+                    # print _[0]
                     # print _[0]
                     print '\n\n\n'
 
@@ -388,13 +388,13 @@ if __name__=='__main__':
         parser.add_argument('--dimension', type=int, default=20, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=1000, help='Task#')
-    parser.add_argument('--n_epoch', type=int, default=50, help='Task#')
+    parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.02, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=1, help='Task#')
+    parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     args=parser.parse_args()
     print '*' * 80
