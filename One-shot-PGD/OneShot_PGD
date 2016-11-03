@@ -258,16 +258,22 @@ class Model:
                 else:
                     label_count_dict[jj]=1
             max_num=max(label_count_dict.values())
-            if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
-                if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
-                    reward=20
-                    # print '200~~~~!\n'
+            if 1:
+                if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
+                    if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
+                        reward=20
+                        # print '200~~~~!\n'
+                    else:
+                        reward=3
+                elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
+                    reward=-5
+                else:#剩下的是存在一个已经有这个label的slot里，但是这个label不是最多的
+                    reward=-2
+            if 0:
+                if this_label in label_count_dict and len(label_count_dict)==1:
+                    reward=10
                 else:
-                    reward=3
-            elif this_label not in label_count_dict:#存在了一个有label的但是不是这个label的slot，给予比较大的惩罚
-                reward=-5
-            else:#剩下的是存在一个已经有这个label的slot里，但是这个label不是最多的
-                reward=-2
+                    reward=-3
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
