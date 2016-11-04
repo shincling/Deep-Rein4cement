@@ -295,6 +295,10 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         xx, yy = get_dataset(dimention,path_length=path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        if 0:
+            load_params=pickle.load(open('/home/sw/Shin/Codes/Deep-Rein4cement/One-shot-PGD/params/params_001_12_99_2016-11-04 16:12:19'))
+            lasagne.layers.set_all_param_values(self.network,load_params)
+            print 'load succeed!'
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
@@ -306,6 +310,9 @@ class Model:
 
             for idx_batch in range(batch_total_number):#对于每一个batch
                 # 初始化两个循环的参数，state和概率
+                while self.lr<0.01:
+                    self.lr*=1.5
+                    print "now lr is:",self.lr
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
@@ -408,7 +415,7 @@ if __name__=='__main__':
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='000', help='Task#')
+    parser.add_argument('--save_path', type=str, default='001', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
