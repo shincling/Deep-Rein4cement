@@ -2,6 +2,7 @@
 import random
 import argparse
 import time
+import pickle
 import lasagne
 import numpy as np
 import theano
@@ -156,7 +157,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
 
 class Model:
     def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
-                 n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,**kwargs):
+                 n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,save_path=str(np.random.randint(100,999)),**kwargs):
         self.dimension=dimension
         self.n_classes=n_classes
         self.n_slot=n_classes
@@ -169,6 +170,7 @@ class Model:
         self.std=std
         self.discount=discount
         self.x_dim=dimension
+        self.save_path=save_path
 
         if update_method=='sgd':
             self.update_method=lasagne.updates.sgd
@@ -236,6 +238,7 @@ class Model:
         self.output_model_range_updates = theano.function([],[probas_range,cost,hidden],updates=updates,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
         self.output_hidden = theano.function([x_range],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
         # self.output_model_range = theano.function([],[probas_range,cost],givens=givens,updates=updates,on_unused_input='ignore',allow_input_downcast=True)
+        self.network=l_range_mu
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
         new_memory_state=np.zeros([self.n_classes,self.x_dim])
@@ -290,6 +293,7 @@ class Model:
         path_length=self.path_length
         dimention=self.x_dim
         n_classes=self.n_classes
+        save_path=self.save_path
         xx, yy = get_dataset(dimention,path_length=path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         for epoch in range(self.n_epoch):
             begin_time = time.time()
@@ -372,6 +376,9 @@ class Model:
                     print '\n\n\n'
 
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
+                prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
+                print 'save_folder:',save_path
+                pickle.dump(prev_weights,open('/home/shin/MyGit/RL/Deep-Rein4cement/One-shot-PGD/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
                 if tmp_result / n_paths  > 0:
                     print total_state[0][-1]
@@ -402,6 +409,7 @@ if __name__=='__main__':
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
+    parser.add_argument('--save_path', type=str, default='000', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
