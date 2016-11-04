@@ -378,7 +378,7 @@ class Model:
                 print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
                 prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
                 print 'save_folder:',save_path
-                pickle.dump(prev_weights,open('/home/shin/MyGit/RL/Deep-Rein4cement/One-shot-PGD/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
+                pickle.dump(prev_weights,open('params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
                 if tmp_result / n_paths  > 0:
                     print total_state[0][-1]
@@ -405,9 +405,9 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=0.1, help='Task#')
+    parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='000', help='Task#')
     args=parser.parse_args()
