@@ -261,7 +261,7 @@ class Model:
                 else:
                     label_count_dict[jj]=1
             max_num=max(label_count_dict.values())
-            if 1:
+            if 0:
                 if this_label in label_count_dict and label_count_dict[this_label]==max_num: #存在了label重合最多的slot里
                     if idx_path_length==self.path_length-1 and index_to_insert==1:#如果是一个样本的最后一步
                         reward=20
@@ -272,7 +272,7 @@ class Model:
                     reward=-5
                 else:#剩下的是存在一个已经有这个label的slot里，但是这个label不是最多的
                     reward=-2
-            if 0:
+            if 1:
                 if this_label in label_count_dict and len(label_count_dict)==1:
                     reward=10
                 else:
@@ -375,10 +375,9 @@ class Model:
                     # print _[0]
                     print '\n\n\n'
 
-                print 'cost:{},average_reward:{},espect_reward:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths)
+                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths, save_path)
                 prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
-                print 'save_folder:',save_path
-                pickle.dump(prev_weights,open('params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
+                pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
                 if tmp_result / n_paths  > 0:
                     print total_state[0][-1]
