@@ -24,7 +24,7 @@ def reward_count(total_reward, length, discout=0.99):
     result = np.dot(total_reward, discout_list)
     return result
 
-def get_dataset(dimention,path_length=10,total_labels=20,total_label=3,total_roads=10000):
+def get_dataset(dimention,path_length=10,total_labels=10,total_label=3,total_roads=10000):
     order_list=[[],[],[],[],[],[],[],[],[],[]]
     if not test_mode:
         x=np.random.random((10000,dimention))
@@ -39,13 +39,13 @@ def get_dataset(dimention,path_length=10,total_labels=20,total_label=3,total_roa
             order_list[i]=[zz]
 
     # total_roads=1000
-    total_lables=10
+    # total_lables=10
     # path_length=10
     total_label=3
     final_x=np.zeros((total_roads,path_length,dimention))
     final_y=np.zeros((total_roads,path_length))
     for one_sample in range(total_roads):
-        label_list=random.sample(range(total_lables),total_label)
+        label_list=random.sample(range(total_labels),total_label)
         one_shoot_label=label_list[-1]
         insert_idx=np.random.randint(0,path_length-1)
         final_x[one_sample,insert_idx]=random.sample(order_list[one_shoot_label],1)[0]
@@ -311,8 +311,8 @@ class Model:
 
             for idx_batch in range(batch_total_number):#对于每一个batch
                 # 初始化两个循环的参数，state和概率
-                while self.lr<0.01:
-                    self.lr*=1.5
+                if self.lr<0.01:
+                    self.lr*=1.2
                     print "now lr is:",self.lr
                 xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -406,7 +406,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=int, default=20, help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=30, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=50, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=1000, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
