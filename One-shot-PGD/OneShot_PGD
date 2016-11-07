@@ -385,7 +385,7 @@ class Model:
                     # print _[0]
                     print '\n\n\n'
 
-                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost / n_paths, tmp_result / n_paths, tmp_reward/ n_paths, save_path)
+                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost / batch_total_number, tmp_result /batch_total_number, tmp_reward/batch_total_number, save_path)
                 prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
                 pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
