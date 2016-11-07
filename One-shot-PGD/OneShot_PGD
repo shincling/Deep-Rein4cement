@@ -24,7 +24,7 @@ def reward_count(total_reward, length, discout=0.99):
     result = np.dot(total_reward, discout_list)
     return result
 
-def get_dataset(dimention=10,path_length=10):
+def get_dataset(dimention,path_length=10,total_labels=20,total_label=3,total_roads=10000):
     order_list=[[],[],[],[],[],[],[],[],[],[]]
     if not test_mode:
         x=np.random.random((10000,dimention))
@@ -38,7 +38,7 @@ def get_dataset(dimention=10,path_length=10):
             zz[i]=1
             order_list[i]=[zz]
 
-    total_roads=1000
+    # total_roads=1000
     total_lables=10
     # path_length=10
     total_label=3
@@ -156,9 +156,9 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         return alpha
 
 class Model:
-    def __init__(self,dimension=50,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
+    def __init__(self,x_dimension=20,h_dimension=30,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
                  n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,save_path=str(np.random.randint(100,999)),**kwargs):
-        self.dimension=dimension
+        self.h_dim=h_dimension
         self.n_classes=n_classes
         self.n_slot=n_classes
         self.batch_size=batch_size
@@ -169,7 +169,7 @@ class Model:
         self.lr=lr
         self.std=std
         self.discount=discount
-        self.x_dim=dimension
+        self.x_dim=x_dimension
         self.save_path=save_path
 
         if update_method=='sgd':
@@ -191,31 +191,31 @@ class Model:
         self.x_range_shared=theano.shared(np.zeros((self.batch_size,self.path_length,self.x_dim),dtype=theano.config.floatX),borrow=True)
         self.x_range_action=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes),dtype=theano.config.floatX),borrow=True)
         self.x_range_reward=theano.shared(np.zeros(self.batch_size,dtype=theano.config.floatX),borrow=True)
-        self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.x_dim),dtype=theano.config.floatX),borrow=True)
+        self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.h_dim),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
         D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.x_dim])
         # l_range_dense1 = lasagne.layers.DenseLayer(l_range_flatten,self.dimension,W=D1,nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,5*self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.x_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
-        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.x_dim])
-        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
+        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.h_dim])
         if test_mode:
             l_range_dense2,l_range_dense2_origin=l_range_in,l_range_in
         # l_range_mu = lasagne.layers.DenseLayer(l_range_hidden,self.n_slot,W=D2,nonlinearity=lasagne.nonlinearities.softmax)
 
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
-        l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes,self.x_dim))
-        l_range_memory = lasagne.layers.ReshapeLayer(l_range_memory_in,[self.batch_size*self.path_length,self.n_classes,self.x_dim])
+        l_range_memory_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes,self.h_dim))
+        l_range_memory = lasagne.layers.ReshapeLayer(l_range_memory_in,[self.batch_size*self.path_length,self.n_classes,self.h_dim])
         if 0:
             l_range_status=lasagne.layers.ConcatLayer((l_range_memory,l_range_hidden),axis=1) #[bs*pl,(n_class+1),dim]
             l_range_mu=lasagne.layers.DenseLayer(l_range_status,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.sigmoid)
             l_range_mu=lasagne.layers.DenseLayer(l_range_mu,self.n_classes,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_mu,[self.batch_size,self.path_length,self.n_classes])
         if 1:
-            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.x_dim])
+            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.h_dim])
             l_range_status=ChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_status,[self.batch_size,self.path_length,self.n_classes])
 
@@ -241,7 +241,7 @@ class Model:
         self.network=l_range_mu
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
-        new_memory_state=np.zeros([self.n_classes,self.x_dim])
+        new_memory_state=np.zeros([self.n_classes,self.h_dim])
         new_memory_label=np.zeros([self.n_classes,self.path_length])
         reward=0.0
 
@@ -291,10 +291,11 @@ class Model:
         batch_size=self.batch_size
         n_paths=self.n_paths
         path_length=self.path_length
-        dimention=self.x_dim
+        x_dim=self.x_dim
+        h_dim=self.h_dim
         n_classes=self.n_classes
         save_path=self.save_path
-        xx, yy = get_dataset(dimention,path_length=path_length) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         if 0:
             load_params=pickle.load(open('/home/sw/Shin/Codes/Deep-Rein4cement/One-shot-PGD/params/params_001_12_99_2016-11-04 16:12:19'))
             lasagne.layers.set_all_param_values(self.network,load_params)
@@ -317,8 +318,8 @@ class Model:
                 yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                 xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
                 xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
-                memory_0=np.zeros((batch_size,self.n_classes,xx.shape[-1]))
-                memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,xx.shape[-1]))
+                memory_0=np.zeros((batch_size,self.n_classes,h_dim))
+                memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
@@ -328,7 +329,7 @@ class Model:
                     probbb = self.output_model_range()[0]
                     probs_sample_0 = probbb[:, 0]
 
-                    total_state = np.zeros([batch_size, path_length, n_classes+1,dimention])
+                    total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
                     total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
                     total_action = np.zeros([batch_size, path_length])
@@ -358,9 +359,9 @@ class Model:
                             del new_memory_state, now_state,new_memory_label
 
                         if t != path_length - 1:
-                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t+1].reshape(batch_size,1,dimention).repeat(path_length,axis=1))[0]
-                            self.x_range_shared.set_value(xx_batch[:,t+1].reshape(batch_size,1,dimention).repeat(path_length,axis=1))
-                            self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,dimention).repeat(path_length,axis=1))
+                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t+1].reshape(batch_size,1,x_dim).repeat(path_length,axis=1))[0]
+                            self.x_range_shared.set_value(xx_batch[:,t+1].reshape(batch_size,1,x_dim).repeat(path_length,axis=1))
+                            self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,h_dim).repeat(path_length,axis=1))
                             total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
 
                     self.x_range_shared.set_value(xx_batch)
@@ -402,9 +403,10 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
     if test_mode:
-        parser.add_argument('--dimension', type=int, default=10, help='Dimension#')
+        parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--dimension', type=int, default=20, help='Dimension#')
+        parser.add_argument('--x_dimension', type=int, default=20, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=30, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=1000, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
