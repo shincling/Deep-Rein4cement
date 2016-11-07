@@ -309,20 +309,22 @@ class Model:
             xx=np.array([one[0] for one in zipp])
             yy=np.array([one[1] for one in zipp])
 
-            for idx_batch in range(batch_total_number):#对于每一个batch
-                # 初始化两个循环的参数，state和概率
+            for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                 if self.lr<0.01:
                     self.lr*=1.2
                     print "now lr is:",self.lr
-                xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
-                xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
-                memory_0=np.zeros((batch_size,self.n_classes,h_dim))
-                memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
-                tmp_cost, tmp_result, tmp_reward = 0, 0, 0
-                for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
+                for idx_batch in range(batch_total_number):#对于每一个batch
+                    # 初始化两个循环的参数，state和概率
+                    xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                    yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                    xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
+                    xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
+                    memory_0=np.zeros((batch_size,self.n_classes,h_dim))
+                    memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
+
+                    tmp_cost, tmp_result, tmp_reward = 0, 0, 0
+                # for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
                     self.x_range_shared.set_value(xx_batch_0_repeat)
                     self.x_range_memory.set_value(memory_0_repeat)
