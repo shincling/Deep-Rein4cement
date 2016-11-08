@@ -1,7 +1,5 @@
 #-*- coding: UTF-8 -*-
 import os
-import sys
-sys.path.append('..')
 import numpy as np
 import random
 import scipy.misc
@@ -37,14 +35,7 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
         print final_y
     return final_x,final_y
 
-def build():
-    path='python/backall'
-    pathdir=os.listdir(path)
-    files=[path+'/'+ff for ff in pathdir]
-    labels=get_labels(pathdir)
-    all_count=len(labels)
-    ratio=0.7
-    size=(20,20)
+def build(path,pathdir,files,labels,all_count,ratio,size):
 
     train_labels=random.sample(labels,int(ratio*len(labels)))
     for i in train_labels:
@@ -63,7 +54,18 @@ def build():
 
     x_train,y_train=get_sequence_images(train_dates,train_labels,11,3,size,10)
     pass
+def cc():
+    pass
 
+bbb=111
 
 if __name__=="__main__":
-    build()
+    cc()
+    path='python/backall'
+    pathdir=os.listdir(path)
+    files=[path+'/'+ff for ff in pathdir]
+    labels=get_labels(pathdir)
+    all_count=len(labels)
+    ratio=0.7
+    size=(20,20)
+    build(path,pathdir,files,labels,all_count,ratio,size)
