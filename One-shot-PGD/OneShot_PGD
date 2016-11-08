@@ -311,7 +311,7 @@ class Model:
 
             for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                 if self.lr<0.01:
-                    self.lr*=1.2
+                    self.lr*=1.015
                     print "now lr is:",self.lr
 
                 for idx_batch in range(batch_total_number):#对于每一个batch
@@ -419,7 +419,7 @@ if __name__=='__main__':
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='001', help='Task#')
+    parser.add_argument('--save_path', type=str, default=str(random.randint(100,999)), help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
