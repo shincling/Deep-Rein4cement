@@ -16,19 +16,31 @@ def get_labels(dir):
             labels_list.append(label)
     return labels_list
 
-
 def get_shuffled_images(paths,labels):
 
     pass
 
 path='python/backall'
 pathdir=os.listdir(path)
-trainfile=[path+ff for ff in pathdir]
+files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
+all_count=len(labels)
 ratio=0.7
 
 train_labels=random.sample(labels,int(ratio*len(labels)))
 for i in train_labels:
     labels.remove(i)
 test_labels=labels
-assert len(train_labels)+len(test_labels)==242
+assert len(train_labels)+len(test_labels)==all_count
+
+train_dates={label:[] for label in train_labels}
+test_dates={label:[] for label in test_labels}
+for file in files:
+    label=file[-11:-7]
+    if label in train_labels:
+        train_dates[label].append(np.float32(imread(file)))
+    else:
+        test_dates[label].append(np.float32(imread(file)))
+pass
+
+
