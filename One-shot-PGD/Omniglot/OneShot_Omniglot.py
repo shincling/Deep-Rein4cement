@@ -9,8 +9,6 @@ import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image
-x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
-yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
 
 def action_to_vector(x, n_classes): #x是bs*path_length
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
@@ -199,7 +197,7 @@ class Model:
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
         D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
-        l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,self.x_dim[0],self.x_dim[1]])
+        l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
         l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
@@ -311,6 +309,9 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
+        yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
+        xx,yy=x_train,yy_train
         if 0:
             load_params=pickle.load(open('/home/sw/Shin/Codes/Deep-Rein4cement/One-shot-PGD/params/params_001_12_99_2016-11-04 16:12:19'))
             lasagne.layers.set_all_param_values(self.network,load_params)
@@ -326,20 +327,18 @@ class Model:
 
             for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                 if self.lr<0.01:
-                    self.lr*=1.2
+                    self.lr*=1.05
                     print "now lr is:",self.lr
-
                 for idx_batch in range(batch_total_number):#对于每一个batch
                     # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                    xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-1]])
+                    xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
                     xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
                     memory_0=np.zeros((batch_size,self.n_classes,h_dim))
                     memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
                     tmp_cost, tmp_result, tmp_reward = 0, 0, 0
-                # for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                     # 但是第一步的初始化状态都是一样的
                     self.x_range_shared.set_value(xx_batch_0_repeat)
                     self.x_range_memory.set_value(memory_0_repeat)
