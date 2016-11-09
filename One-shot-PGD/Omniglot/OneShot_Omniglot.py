@@ -375,8 +375,8 @@ class Model:
                             del new_memory_state, now_state,new_memory_label
 
                         if t != path_length - 1:
-                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t+1].reshape(batch_size,1,x_dim).repeat(path_length,axis=1))[0]
-                            self.x_range_shared.set_value(xx_batch[:,t+1].reshape(batch_size,1,x_dim).repeat(path_length,axis=1))
+                            total_state[:, t + 1,-1,:] =self.output_hidden(xx_batch[:,t+1].reshape(batch_size,1,x_dim[0],x_dim[1]).repeat(path_length,axis=1))[0]
+                            self.x_range_shared.set_value(xx_batch[:,t+1].reshape(batch_size,1,x_dim[0],x_dim[1]).repeat(path_length,axis=1))
                             self.x_range_memory.set_value(total_state[:,t+1,:-1,:].reshape(batch_size,1,n_classes,h_dim).repeat(path_length,axis=1))
                             total_probs[:, t + 1, :] = self.output_model_range()[0][:,0]
 
@@ -422,9 +422,9 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=50, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=20, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=1000, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
