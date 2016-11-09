@@ -31,8 +31,8 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
                 final_y[one_sample,i]=int(label)
                 final_x[one_sample,i,:]=random.sample(data[label],1)[0]
         # del data
-        print final_x[0]
-        print final_y
+        # print final_x[0]
+        # print final_y
     return final_x,final_y
 
 def build(path,pathdir,files,labels,all_count,ratio,size):
@@ -52,20 +52,20 @@ def build(path,pathdir,files,labels,all_count,ratio,size):
         else:
             test_dates[label].append(np.float32(imresize(imread(file),size)))
 
-    x_train,y_train=get_sequence_images(train_dates,train_labels,11,3,size,10)
-    pass
-def cc():
-    pass
+    x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,3,size,total_roads)
+    x_test,y_test=get_sequence_images(test_dates,test_labels,path_length,3,size,total_roads)
+    return x_train,y_train,x_test,y_test
 
-bbb=111
-
-if __name__=="__main__":
-    cc()
-    path='python/backall'
-    pathdir=os.listdir(path)
-    files=[path+'/'+ff for ff in pathdir]
-    labels=get_labels(pathdir)
-    all_count=len(labels)
-    ratio=0.7
-    size=(20,20)
-    build(path,pathdir,files,labels,all_count,ratio,size)
+path='python/backall'
+pathdir=os.listdir(path)
+files=[path+'/'+ff for ff in pathdir]
+labels=get_labels(pathdir)
+all_count=len(labels)
+ratio=0.7
+size=(20,20)
+path_length=11
+total_roads=10000
+x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
+del files
+# if __name__=="__main__":
+#     build(path,pathdir,files,labels,all_count,ratio,size)

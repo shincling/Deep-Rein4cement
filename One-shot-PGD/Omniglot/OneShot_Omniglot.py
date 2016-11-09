@@ -8,6 +8,8 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
+import image
+x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
 
 def action_to_vector(x, n_classes): #x是bs*path_length
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
@@ -295,7 +297,7 @@ class Model:
         h_dim=self.h_dim
         n_classes=self.n_classes
         save_path=self.save_path
-        xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
+        # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
         if 0:
             load_params=pickle.load(open('/home/sw/Shin/Codes/Deep-Rein4cement/One-shot-PGD/params/params_001_12_99_2016-11-04 16:12:19'))
             lasagne.layers.set_all_param_values(self.network,load_params)
