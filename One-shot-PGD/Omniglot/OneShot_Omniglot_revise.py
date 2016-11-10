@@ -209,11 +209,11 @@ class Model:
         l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
-        l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
+        # l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_dropout2,1024,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
-        l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_dropout3,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,1024,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
@@ -394,7 +394,8 @@ class Model:
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
-                    # print _[0]
+                    print _[0]
+                    print total_probs[0]
                     # print _[0]
                     print '\n\n\n'
 
