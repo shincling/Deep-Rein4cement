@@ -11,10 +11,12 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image
 
 def action_to_vector(x, n_classes): #x是bs*path_length
+    p=0.7 #p是标签正常的概率
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
     for i in range(x.shape[0]):
         for j in range(x.shape[1]):
-            result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+            if np.random.rand()<p and j!=x.shape[1]:
+                result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
     return result
 
 def reward_count(total_reward, length, discout=0.99):
@@ -216,7 +218,7 @@ class Model:
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
-        if if_cont==1:
+        if if_cont==0:
             l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
             self.h_dim+=self.n_classes
         l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,self.h_dim])
@@ -309,7 +311,7 @@ class Model:
         yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
         xx,yy=x_train,yy_train
         if 0:
-            load_params=pickle.load(open('/home/sw/Shin/Codes/Deep-Rein4cement/One-shot-PGD/params/params_001_12_99_2016-11-04 16:12:19'))
+            load_params=pickle.load(open('params/params_001_0_44_2016-11-11 14:58:31'))
             lasagne.layers.set_all_param_values(self.network,load_params)
             print 'load succeed!'
         for epoch in range(self.n_epoch):
@@ -391,12 +393,12 @@ class Model:
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
                     print 'cost:{},average_reward:{}'.format(cost,aver_reward)
-                    # print total_state[0][-1]
+                    print total_state[0][-1]
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
                     print _[0]
-                    print total_probs[0]
+                    # print total_probs[0]
                     # print _[0]
                     print '\n\n\n'
 
@@ -430,12 +432,12 @@ if __name__=='__main__':
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
-    parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.005, help='Task#')
+    parser.add_argument('--max_norm', type=float, default=5, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='001', help='Task#')
+    parser.add_argument('--save_path', type=str, default='103', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
