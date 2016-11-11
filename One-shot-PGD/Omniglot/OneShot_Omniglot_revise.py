@@ -200,24 +200,25 @@ class Model:
         D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
-        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
+        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        # l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
         # l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
 
 
-        l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
+        # l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        # l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        # l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         # l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,1024,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.sigmoid) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
-        l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
-        self.h_dim+=self.n_classes
+        if if_cont==1:
+            l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
+            self.h_dim+=self.n_classes
         l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,self.h_dim])
 
         # if test_mode:
@@ -415,6 +416,7 @@ class Model:
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
 test_mode=0
+if_cont=1
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
