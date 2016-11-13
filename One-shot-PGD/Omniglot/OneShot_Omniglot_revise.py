@@ -17,7 +17,7 @@ def action_to_vector(x, n_classes): #x是bs*path_length
         for j in range(x.shape[1]):
             if np.random.rand()<p and j!=x.shape[1]:
                 result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
-    return result
+    return np.int32(result)
 
 def reward_count(total_reward, length, discout=0.99):
     discout_list = np.zeros(length)
@@ -262,13 +262,13 @@ class Model:
 
         if hid==1:
             l_range_probas=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,self.h_dim])
-            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,len(image.labels),W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_range_label:x_label})
             hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
-            hidden_cost = T.nnet.categorical_crossentropy(ppp, x_label.reshape([-1,len(image.labels)])).sum()
+            hidden_cost = T.nnet.categorical_crossentropy(ppp, x_label.reshape([-1,lll])).sum()
             pred = T.argmax(ppp, axis=1)
             hidden_grads=T.grad(hidden_cost,hidden_params)
-            hidden_updates = self.update_method(hidden_grads, hidden_params, learning_rate=0.01)
+            hidden_updates = self.update_method(hidden_grads, hidden_params, learning_rate=0.1)
             self.hid = theano.function([x_range,x_label],[hidden_cost,pred],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
             # self.hid = theano.function([x_range,x_label],[ppp],on_unused_input='ignore',allow_input_downcast=True)
 
@@ -346,13 +346,14 @@ class Model:
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes)
 
                     global hid
-                    y_batch = np.array(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                    y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     if hid==1:
                         # self.x_range_shared.set_value(xx_batch)
                         # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
-                        ccc,pred=self.hid(xx_batch,action_to_vector(y_batch,len(image.labels)))
+                        ccc,pred=self.hid(xx_batch,action_to_vector(y_batch,lll))
                         print 'The hidden classification is :',ccc
-                        errors=np.count_nonzero(np.int32(pred==y_batch))
+                        errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
+                        print pred[0:5],y_batch.flatten()[0:5]
                         print 'right rate:',errors/len(y_batch)
                         if 3>1:
                             continue
@@ -450,6 +451,7 @@ test_mode=0
 if_cont=0
 global hid
 hid=1
+lll=910
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
