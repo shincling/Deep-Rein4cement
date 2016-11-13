@@ -73,10 +73,10 @@ ratio=0.7
 size=(20,20)
 total_labels_per_seq=3
 path_length=11
-total_roads=10000
+total_roads=100
 x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
 del files
-y_train_shuffle=shuffle_label(y_train,total_labels_per_seq)
-y_test_shuffle=shuffle_label(y_test,total_labels_per_seq)
+y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
