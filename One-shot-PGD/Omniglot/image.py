@@ -64,6 +64,8 @@ def build(path,pathdir,files,labels,all_count,ratio,size):
     train_rank_dates={}
     for i in range(len(train_dates)):
         train_rank_dates[i]=train_dates[train_dates.keys()[i]]
+    if cnn_only:
+        return train_rank_dates
     x_train,y_train=get_sequence_images(train_rank_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
 
     # x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
@@ -79,10 +81,14 @@ ratio=0.7
 size=(20,20)
 total_labels_per_seq=3
 path_length=11
-total_roads=1000
-x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
-del files
-y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+total_roads=10
+cnn_only=0
+if cnn_only:
+    ddd=build(path,pathdir,files,labels,all_count,ratio,size)
+else:
+    x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
+    del files
+    y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
