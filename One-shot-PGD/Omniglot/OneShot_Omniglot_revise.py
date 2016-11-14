@@ -341,10 +341,11 @@ class Model:
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
             '''每一轮的shuffle策略'''
-            zipp=zip(xx,yy)
+            zipp=zip(xx,yy,y_train)
             random.shuffle(zipp)
             xx=np.array([one[0] for one in zipp])
             yy=np.array([one[1] for one in zipp])
+            y_train=np.array([one[2] for one in zipp])
 
             for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
                 # if self.lr<0.01:
@@ -366,7 +367,7 @@ class Model:
                         errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
                         print pred[0:100]
                         print y_batch.flatten()[0:100]
-                        print 'right rate:',float(errors)/len(y_batch)
+                        print 'right rate:',float(errors)/len(y_batch.flatten())
                         if ccc>200:
                             continue
                         else:
