@@ -220,9 +220,9 @@ class Model:
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_dropout2,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_dropout1,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_dropout1,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         if if_cont==1:
@@ -268,17 +268,20 @@ class Model:
         self.output_hidden = theano.function([x_range,x_label],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
 
         if hid==1:
-            l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
-            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
-            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+            # l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
+            # xx_label=T.matrix()
+            # l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
+            # l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
+            l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.h_dim])
+            l_range_probas=lasagne.layers.DenseLayer(l_range_dense2_origin,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_range_label:x_label})
             hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
-            hidden_cost = T.nnet.binary_crossentropy(ppp, x_label[:,0]).sum()
+            hidden_cost = T.nnet.categorical_crossentropy(ppp, x_label.reshape([-1,lll])).sum()
             pred = T.argmax(ppp, axis=1)
             hidden_grads=T.grad(hidden_cost,hidden_params)
-            hidden_updates =lasagne.updates.adagrad(hidden_grads, hidden_params, learning_rate=0.005)
+            hidden_updates =lasagne.updates.adagrad(hidden_grads, hidden_params, learning_rate=0.01)
             self.hid = theano.function([x_range,x_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
-            # self.hid = theano.function([x_range,x_label],[ppp],on_unused_input='ignore',allow_input_downcast=True)
+            # self.hid = theano.function([x_range,x_label],[x_label[:,0]],on_unused_input='ignore',allow_input_downcast=True)
 
         self.network=l_range_mu
 
@@ -360,9 +363,10 @@ class Model:
                         # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
                         ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll))
                         print 'The hidden classification is :',ccc
-                        errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
-                        print pred[0:5],y_batch[:,0][0:5]
-                        print 'right rate:',errors/len(y_batch)
+                        errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
+                        print pred[0:100]
+                        print y_batch.flatten()[0:100]
+                        print 'right rate:',float(errors)/len(y_batch)
                         if ccc>200:
                             continue
                         else:
@@ -459,7 +463,7 @@ test_mode=0
 if_cont=0
 global hid
 hid=1
-lll=910
+lll=170
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -467,7 +471,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=100, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=300, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
@@ -476,7 +480,7 @@ if __name__=='__main__':
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
     parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=1, help='Task#')
+    parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='103', help='Task#')
     args=parser.parse_args()
