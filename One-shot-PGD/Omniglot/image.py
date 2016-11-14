@@ -78,10 +78,10 @@ files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 all_count=len(labels)
 ratio=0.7
-size=(20,20)
+size=(10,10)
 total_labels_per_seq=3
 path_length=11
-total_roads=10
+total_roads=1000
 cnn_only=0
 if cnn_only:
     ddd=build(path,pathdir,files,labels,all_count,ratio,size)
