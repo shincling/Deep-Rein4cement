@@ -79,7 +79,7 @@ def main():
     updates = nesterov_momentum(loss_train, params, learning_rate=0.003, momentum=0.9)
 
     # set up training and prediction functions
-    train = theano.function(inputs=[X, Y], outputs=loss_train, updates=updates, allow_input_downcast=True)
+    train = theano.function(inputs=[X, Y], outputs=[loss_train,pred_valid], updates=updates, allow_input_downcast=True)
     valid = theano.function(inputs=[X, Y], outputs=loss_valid, allow_input_downcast=True)
     predict_valid = theano.function(inputs=[X], outputs=pred_valid, allow_input_downcast=True)
 
@@ -94,11 +94,15 @@ def main():
             xx_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
             yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
                
-        train_loss = train(xx_batch,yy_batch)
+        train_loss ,pred = train(xx_batch,yy_batch)
         train_eval.append(train_loss)
-        # acc = np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
+        print pred.shape
+        acc = np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
+        acc=float(acc)/BATCHSIZE
         # valid_acc.append(acc)
-        print 'iter:', i, '| Tloss:', train_loss 
+        print 'iter:', i, '| Tloss:', train_loss,'|Acc:',acc
+        print pred
+        print np.argmax(yy_batch,axis=1)
 
 
     # save weights
