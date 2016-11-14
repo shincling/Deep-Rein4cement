@@ -10,6 +10,13 @@ import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image
 
+def action_to_vector_real(x, n_classes): #x是bs*path_length
+    result = np.zeros([x.shape[0], x.shape[1], n_classes])
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+    return np.int32(result)
+
 def action_to_vector(x, n_classes): #x是bs*path_length
     p=0.7 #p是标签正常的概率
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
@@ -202,18 +209,18 @@ class Model:
         D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
-        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
-        # l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
+        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
+        l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
 
 
-        # l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
-        # l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
+        l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
+        l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_dropout2,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
@@ -261,15 +268,16 @@ class Model:
         self.output_hidden = theano.function([x_range,x_label],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
 
         if hid==1:
-            l_range_probas=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,self.h_dim])
+            l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
+            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
             l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
             ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_range_label:x_label})
             hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
-            hidden_cost = T.nnet.categorical_crossentropy(ppp, x_label.reshape([-1,lll])).sum()
+            hidden_cost = T.nnet.binary_crossentropy(ppp, x_label[:,0]).sum()
             pred = T.argmax(ppp, axis=1)
             hidden_grads=T.grad(hidden_cost,hidden_params)
-            hidden_updates = self.update_method(hidden_grads, hidden_params, learning_rate=0.1)
-            self.hid = theano.function([x_range,x_label],[hidden_cost,pred],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
+            hidden_updates =lasagne.updates.adagrad(hidden_grads, hidden_params, learning_rate=0.005)
+            self.hid = theano.function([x_range,x_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
             # self.hid = theano.function([x_range,x_label],[ppp],on_unused_input='ignore',allow_input_downcast=True)
 
         self.network=l_range_mu
@@ -350,12 +358,12 @@ class Model:
                     if hid==1:
                         # self.x_range_shared.set_value(xx_batch)
                         # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
-                        ccc,pred=self.hid(xx_batch,action_to_vector(y_batch,lll))
+                        ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll))
                         print 'The hidden classification is :',ccc
-                        errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
-                        print pred[0:5],y_batch.flatten()[0:5]
+                        errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
+                        print pred[0:5],y_batch[:,0][0:5]
                         print 'right rate:',errors/len(y_batch)
-                        if 3>1:
+                        if ccc>200:
                             continue
                         else:
                             hid=0
@@ -459,7 +467,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=20, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=100, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
