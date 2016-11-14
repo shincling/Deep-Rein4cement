@@ -17,6 +17,7 @@ def get_labels(dir):
 def get_sequence_images(data,labels,path_length,total_label,size,total_roads=10000):
     final_x=np.zeros((total_roads,path_length,size[0],size[1]))
     final_y=np.zeros((total_roads,path_length))
+    labels=data.keys()
     for one_sample in range(total_roads):
         label_list=random.sample(labels,total_label)
         one_shoot_label=label_list[-1]
@@ -60,7 +61,12 @@ def build(path,pathdir,files,labels,all_count,ratio,size):
         else:
             test_dates[label].append(np.float32(imresize(imread(file),size)))
 
-    x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
+    train_rank_dates={}
+    for i in range(len(train_dates)):
+        train_rank_dates[i]=train_dates[train_dates.keys()[i]]
+    x_train,y_train=get_sequence_images(train_rank_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
+
+    # x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
     x_test,y_test=get_sequence_images(test_dates,test_labels,path_length,total_labels_per_seq,size,total_roads)
     return x_train,y_train,x_test,y_test
 
@@ -73,7 +79,7 @@ ratio=0.7
 size=(20,20)
 total_labels_per_seq=3
 path_length=11
-total_roads=100
+total_roads=1000
 x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
 del files
 y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
