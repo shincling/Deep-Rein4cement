@@ -3,7 +3,7 @@ import os
 import numpy as np
 import random
 import scipy.misc
-from scipy.misc import imread,imresize
+from scipy.misc import imread,imresize,imsave,imshow
 # from scipy.ndimage import rotate,shift
 
 def get_labels(dir):
@@ -57,9 +57,9 @@ def build(path,pathdir,files,labels,all_count,ratio,size):
     for file in files:
         label=file[-11:-7]
         if label in train_labels:
-            train_dates[label].append(np.float32(imresize(imread(file),size)))
+            train_dates[label].append(np.float32(imresize(imread(file,1),size)))
         else:
-            test_dates[label].append(np.float32(imresize(imread(file),size)))
+            test_dates[label].append(np.float32(imresize(imread(file,1),size)))
 
     train_rank_dates={}
     for i in range(len(train_dates)):
@@ -78,11 +78,11 @@ files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 all_count=len(labels)
 ratio=0.7
-size=(10,10)
+size=(50,50)
 total_labels_per_seq=3
 path_length=11
 total_roads=1000
-cnn_only=0
+cnn_only=1
 if cnn_only:
     ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
