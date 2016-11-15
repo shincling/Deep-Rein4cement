@@ -57,9 +57,9 @@ def build(path,pathdir,files,labels,all_count,ratio,size):
     for file in files:
         label=file[-11:-7]
         if label in train_labels:
-            train_dates[label].append(np.float32(imresize(imread(file,1),size)))
+            train_dates[label].append(255-np.float32(imresize(imread(file,1),size)))
         else:
-            test_dates[label].append(np.float32(imresize(imread(file,1),size)))
+            test_dates[label].append(255-np.float32(imresize(imread(file,1),size)))
 
     train_rank_dates={}
     for i in range(len(train_dates)):
@@ -78,7 +78,7 @@ files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 all_count=len(labels)
 ratio=0.7
-size=(50,50)
+size=(30,30)
 total_labels_per_seq=3
 path_length=11
 total_roads=1000
