@@ -56,7 +56,7 @@ def main():
     train_y=np.zeros([size,labels])
     for i in range(size):
         label=random.sample(range(labels),1)[0]
-        train_X[i,0]=0.01*random.sample(data[label],1)[0]
+        train_X[i,0]=random.sample(data[label],1)[0]
         train_y[i]=label_binarize([label],range(labels))[0]
 
     X = T.tensor4()

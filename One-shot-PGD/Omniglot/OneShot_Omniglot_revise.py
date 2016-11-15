@@ -210,19 +210,19 @@ class Model:
         D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
-        l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.sigmoid)
-        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
-        # l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
-        # l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
-        # l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
-        # l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
+        l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.tanh)
+        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
+        l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
+        l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
+        l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_dropout1,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         if if_cont==1:
@@ -282,6 +282,7 @@ class Model:
             hidden_updates =lasagne.updates.adagrad(hidden_grads, hidden_params, learning_rate=0.01)
             self.hid = theano.function([x_range,x_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
             # self.hid = theano.function([x_range,x_label],[x_label[:,0]],on_unused_input='ignore',allow_input_downcast=True)
+            self.nnn=l_range_probas
 
         self.network=l_range_mu
 
@@ -361,21 +362,24 @@ class Model:
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes)
 
-                    # global hid
-                    # y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                    # if hid==1:
-                    #     # self.x_range_shared.set_value(xx_batch)
-                    #     # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
-                    #     ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll))
-                    #     print 'The hidden classification is :',ccc
-                    #     errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
-                    #     print pred[0:100]
-                    #     print y_batch.flatten()[0:100]
-                    #     print 'right rate:',float(errors)/len(y_batch.flatten())
-                    #     if ccc>200:
-                    #         continue
-                    #     else:
-                    #         hid=0
+                    global hid
+                    y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+                    if hid==1:
+                        # self.x_range_shared.set_value(xx_batch)
+                        # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
+                        ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll))
+                        print 'The hidden classification is :',ccc
+                        errors=np.count_nonzero(np.int32(pred==y_batch.flatten()))
+                        acc=float(errors)/len(y_batch.flatten())
+                        print pred[0:100]
+                        print y_batch.flatten()[0:100]
+                        print 'right rate:',acc
+                        if acc<0.8:
+                            continue
+                        else:
+                            hid=0
+                            prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
+                            pickle.dump(prev_weights,open('params/params_nnn{}_{}_{}_{}_{}'.format(acc,save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
                     xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
                     xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
@@ -450,15 +454,18 @@ class Model:
                     # print _[0]
                     print '\n\n\n'
 
-            prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
-            pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
-            print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /path_length, tmp_result /path_length, tmp_reward/path_length, save_path)
-            print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
+                prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
+                pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
+            try:
+                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /path_length, tmp_result /path_length, tmp_reward/path_length, save_path)
+                print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
+            except:
+                pass
 
 test_mode=0
-if_cont=1
+if_cont=0
 global hid
-hid=0
+hid=1
 lll=170
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -466,10 +473,10 @@ if __name__=='__main__':
     if test_mode:
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--x_dimension', type=tuple, default=(50,50), help='Dimension#')
+        parser.add_argument('--x_dimension', type=tuple, default=(30,30), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=30, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=160, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=64, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
@@ -478,7 +485,7 @@ if __name__=='__main__':
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='104', help='Task#')
+    parser.add_argument('--save_path', type=str, default='108', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
