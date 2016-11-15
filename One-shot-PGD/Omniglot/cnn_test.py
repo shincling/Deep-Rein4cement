@@ -15,7 +15,7 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image
 
 BATCHSIZE = 32
-PIXELS = 20
+PIXELS = 30
 imageSize = PIXELS * PIXELS
 num_features = imageSize
 size=1000
@@ -25,8 +25,9 @@ def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
 
 def lasagne_model():
-    l_in = InputLayer(shape=(None, 1, 20, 20))
+    l_in = InputLayer(shape=(None, 1, 30, 30))
 
+    l_in =lasagne.layers.NonlinearityLayer(l_in,lasagne.nonlinearities.tanh)
     l_conv1 = Conv2DLayer(l_in, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
     l_conv1b = Conv2DLayer(l_conv1, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
     l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=(2,2))
@@ -55,7 +56,7 @@ def main():
     train_y=np.zeros([size,labels])
     for i in range(size):
         label=random.sample(range(labels),1)[0]
-        train_X[i,0]=random.sample(data[label],1)[0]
+        train_X[i,0]=0.01*random.sample(data[label],1)[0]
         train_y[i]=label_binarize([label],range(labels))[0]
 
     X = T.tensor4()
