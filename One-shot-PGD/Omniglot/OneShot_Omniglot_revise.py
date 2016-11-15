@@ -310,7 +310,7 @@ class Model:
                 if this_label in label_count_dict and len(label_count_dict)==1:
                     if idx_path_length==self.path_length-1:
                         reward=10000
-                        print '100~!\n'
+                        # print '100~!\n'
                     else:
                         reward=3
                 else:
