@@ -142,6 +142,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         batch_size, max_sentlen ,embedding_size = self.input_shapes[0]
         self.batch_size,self.max_sentlen,self.embedding_size=batch_size,max_sentlen,embedding_size
         self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
+        self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
         self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
@@ -153,7 +154,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         return (self.batch_size,self.max_sentlen)
     def get_output_for(self, inputs, **kwargs):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
-        activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])
+        activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
@@ -294,7 +295,7 @@ class Model:
         index_to_insert=int(np.argwhere(now_memory_label[action]==-1)[0])
         #定义reward
         if now_memory_label[action][0]==-1:#证明是新开的一个slot
-            reward=-1
+            reward=-0
         else: #证明action是一个已经有label的slot位置
             label_count_dict={}
             for jj in (now_memory_label[action]):
@@ -307,9 +308,13 @@ class Model:
             max_num=max(label_count_dict.values())
             if 1:
                 if this_label in label_count_dict and len(label_count_dict)==1:
-                    reward=10
+                    if idx_path_length==self.path_length-1:
+                        reward=10000
+                        print '100~!\n'
+                    else:
+                        reward=3
                 else:
-                    reward=-3
+                    reward=-0
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
@@ -471,7 +476,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(10,10), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=100, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=32, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=160, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
