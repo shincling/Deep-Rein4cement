@@ -18,11 +18,11 @@ def action_to_vector_real(x, n_classes): #x是bs*path_length
     return np.int32(result)
 
 def action_to_vector(x, n_classes): #x是bs*path_length
-    p=0.7 #p是标签正常的概率
+    p=1.7 #p是标签正常的概率
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
     for i in range(x.shape[0]):
         for j in range(x.shape[1]):
-            if np.random.rand()<p and j!=x.shape[1]:
+            if np.random.rand()<p and j!=x.shape[1]-1:
                 result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
     return np.int32(result)
 
@@ -222,8 +222,8 @@ class Model:
 
         # l_range_dense2 = lasagne.layers.DenseLayer(l_dropout1,500,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_dropout1,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_flatten,[self.batch_size,self.path_length,self.h_dim])
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         if if_cont==1:
             l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
@@ -295,7 +295,7 @@ class Model:
         index_to_insert=int(np.argwhere(now_memory_label[action]==-1)[0])
         #定义reward
         if now_memory_label[action][0]==-1:#证明是新开的一个slot
-            reward=-0
+            reward=-1
         else: #证明action是一个已经有label的slot位置
             label_count_dict={}
             for jj in (now_memory_label[action]):
@@ -310,11 +310,11 @@ class Model:
                 if this_label in label_count_dict and len(label_count_dict)==1:
                     if idx_path_length==self.path_length-1:
                         reward=10000
-                        # print '100~!\n'
+                        print '100~!\n'
                     else:
-                        reward=3
+                        reward=10
                 else:
-                    reward=-0
+                    reward=-3
         #更新状态，加权平均，更新label记录
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
         now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
@@ -359,7 +359,7 @@ class Model:
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                    yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
+                    yy_batch_vector=action_to_vector(yy_batch,self.n_classes)
 
                     # global hid
                     # y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -438,32 +438,25 @@ class Model:
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
                     print 'cost:{},average_reward:{}'.format(cost,aver_reward)
-                    print total_state[0][-1]
+                    print total_state[0][-1][:,-20:]
                     print total_action[0]
                     print total_memory_label[0][-1]
+                    print '\n'
+                    print total_reward[0][-1]
                     print total_reward[0]
+                    print '\n'
                     print _[0]
                     # print total_probs[0]
                     # print _[0]
                     print '\n\n\n'
 
-                prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
-                pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
-
-                if tmp_result / n_paths  > 0:
-                    print total_state[0][-1]
-                    print total_action[0]
-                    print total_memory_label[0][-1]
-                    print total_reward[0]
-                    print _[0]
-                    # print total_probs[0]
-                    print '\n\n'
-
+            prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
+            pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
             print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /path_length, tmp_result /path_length, tmp_reward/path_length, save_path)
             print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
 
 test_mode=0
-if_cont=0
+if_cont=1
 global hid
 hid=0
 lll=170
@@ -473,17 +466,17 @@ if __name__=='__main__':
     if test_mode:
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--x_dimension', type=tuple, default=(10,10), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=100, help='Dimension#')
+        parser.add_argument('--x_dimension', type=tuple, default=(50,50), help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=30, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=160, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.00005, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=0.1, help='Task#')
+    parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='104', help='Task#')
     args=parser.parse_args()
