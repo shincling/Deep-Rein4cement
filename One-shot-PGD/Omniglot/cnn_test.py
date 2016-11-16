@@ -56,7 +56,7 @@ def main():
     train_y=np.zeros([size,labels])
     for i in range(size):
         label=random.sample(range(labels),1)[0]
-        train_X[i,0]=random.sample(data[label],1)[0]
+        train_X[i,0]=0.01*random.sample(data[label],1)[0]
         train_y[i]=label_binarize([label],range(labels))[0]
 
     X = T.tensor4()
@@ -77,7 +77,8 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer)
-    updates = nesterov_momentum(loss_train, params, learning_rate=0.003, momentum=0.9)
+    updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
+    # updates =lasagne.updates.adagrad(loss_train, params, learning_rate=0.003)
 
     # set up training and prediction functions
     train = theano.function(inputs=[X, Y], outputs=[loss_train,pred_valid], updates=updates, allow_input_downcast=True)
@@ -95,8 +96,10 @@ def main():
             xx_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
             yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
                
-        train_loss ,pred = train(xx_batch,yy_batch)
-        train_eval.append(train_loss)
+            train_loss ,pred = train(xx_batch,yy_batch)
+            print i,idx_batch,'| Tloss:', train_loss,'| Count:',np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
+            print pred
+            print np.argmax(yy_batch,axis=1)
 
         acc=0
         for j in range(batch_total_number):
@@ -105,16 +108,12 @@ def main():
             pred = predict_valid(x_batch)
             acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
         acc=float(acc)/(BATCHSIZE*batch_total_number)
-
-        # valid_acc.append(acc)
-        print 'iter:', i, '| Tloss:', train_loss,'|Acc:',acc
-        print pred
-        print np.argmax(yy_batch,axis=1)
+        print 'iter:', i,idx_batch, '| Tloss:', train_loss,'|Acc:',acc
 
 
     # save weights
     all_params = helper.get_all_param_values(output_layer)
-    f = gzip.open('data/weights.pklz', 'wb')
+    f = gzip.open('params/weights.pklz', 'wb')
     pickle.dump(all_params, f)
     f.close()
 
