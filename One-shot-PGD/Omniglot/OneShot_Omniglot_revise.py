@@ -360,7 +360,7 @@ class Model:
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                    yy_batch_vector=action_to_vector(yy_batch,self.n_classes)
+                    yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -372,14 +372,9 @@ class Model:
                         errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
                         acc=float(errors)/len(y_batch)
                         print pred[0:100]
-                        print y_batch.flatten()[0:100]
+                        print y_batch[:,0][0:100]
                         print 'right rate:',acc
-                        if acc<0.99:
-                            continue
-                        else:
-                            hid=0
-                            prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
-                            pickle.dump(prev_weights,open('params/params_nnn{}_{}_{}_{}_{}'.format(acc,save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
+                        continue
 
                     xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
                     xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
@@ -445,8 +440,6 @@ class Model:
                     print total_state[0][-1][:,-20:]
                     print total_action[0]
                     print total_memory_label[0][-1]
-                    print '\n'
-                    print total_reward[0][-1]
                     print total_reward[0]
                     print '\n'
                     print _[0]
@@ -467,6 +460,11 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
+                    if acc>0.7:
+                        hid=0
+                        prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
+                        pickle.dump(prev_weights,open('params/params_nnn{}_{}_{}_{}_{}'.format(acc,save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
+
 
                 prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
                 pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
@@ -495,7 +493,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.05, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
