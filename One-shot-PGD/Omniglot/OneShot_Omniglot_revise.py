@@ -156,14 +156,12 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
         # if inputs[2] is not None:
         #     final=inputs[2]*final-(1-inputs[2])*1000000
         alpha=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
-        # final=T.batched_dot(alpha,inputs[0])#(BS,max_sentlen)*(BS,max_sentlen,emb_size)--(BS,emb_size)
         return alpha
 
 class Model:
@@ -284,7 +282,17 @@ class Model:
             self.hid_out= theano.function([x_range],[pred],on_unused_input='ignore',allow_input_downcast=True)
             self.nnn=l_range_probas
 
+        if 1 and hid:
+            # load_params = pickle.load(open('params/params_nnn0.701041666667_110_1_64_2016-11-17 15:38:19'))
+            load_params = pickle.load(open('params/params_nnn0.851041666667_114_8_29_2016-11-18 22:19:48'))
+            lasagne.layers.set_all_param_values(self.nnn, load_params)
+            print 'load succeed!'
+            global hid
+            hid=0
+
+
         self.network=l_range_mu
+        self.ppp=l_range_status.W_o
 
     def sample_one_path(self,now_state,now_memory_label, prob,this_label,idx_path_length):
         new_memory_state=np.zeros([self.n_classes,self.h_dim])
@@ -339,7 +347,7 @@ class Model:
         yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
         xx,yy=x_train,yy_train
         if 0:
-            load_params=pickle.load(open('params/params_001_0_44_2016-11-11 14:58:31'))
+            load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
             lasagne.layers.set_all_param_values(self.network,load_params)
             print 'load succeed!'
         for epoch in range(self.n_epoch):
@@ -353,9 +361,10 @@ class Model:
             y_train=np.array([one[2] for one in zipp])
 
             for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
-                if self.lr<0.01:
-                    self.lr*=1.05
-                    print "now lr is:",self.lr
+                # if self.lr<0.01:
+                #     self.lr*=1.05
+                #     print "now lr is:",self.lr
+                tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for idx_batch in range(batch_total_number):#对于每一个batch
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -381,7 +390,6 @@ class Model:
                     memory_0=np.zeros((batch_size,self.n_classes,h_dim))
                     memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
-                    tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                     # 但是第一步的初始化状态都是一样的
                     self.x_range_shared.set_value(xx_batch_0_repeat)
                     self.x_range_label.set_value(yy_batch_vector)
@@ -428,7 +436,7 @@ class Model:
                     self.x_range_shared.set_value(xx_batch)
                     self.x_range_label.set_value(yy_batch_vector)
                     self.x_range_memory.set_value(total_state[:,:,:-1])
-                    self.x_range_action.set_value(action_to_vector(total_action, n_classes))
+                    self.x_range_action.set_value(action_to_vector_real(total_action, n_classes))
                     self.x_range_reward.set_value(reward_count(total_reward, length=path_length, discout=self.discount))
                     aver_reward = np.mean(np.sum(np.float32(total_reward), axis=1))
                     espect_reward = np.mean(np.float32(reward_count(total_reward,path_length,discout=self.discount)), axis=0)
@@ -442,6 +450,7 @@ class Model:
                     print total_memory_label[0][-1]
                     print total_reward[0]
                     print '\n'
+                    # print self.ppp.eval()
                     print _[0]
 
                     # print self.www.eval()
@@ -460,24 +469,24 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-                    if acc>0.7:
+                    if acc>0.85:
                         hid=0
                         prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
                         pickle.dump(prev_weights,open('params/params_nnn{}_{}_{}_{}_{}'.format(acc,save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
 
-                prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
-                pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
             try:
-                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /path_length, tmp_result /path_length, tmp_reward/path_length, save_path)
+                print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /batch_total_number, tmp_result /batch_total_number, tmp_reward/batch_total_number, save_path)
                 print 'epoch:{},time:{}'.format(epoch, time.time() - begin_time)
+                prev_weights = lasagne.layers.helper.get_all_param_values(self.network)
+                pickle.dump(prev_weights,open('params/params_{}_{}_{}_{}_{}'.format(save_path,epoch,repeat_time,tmp_reward/path_length,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
             except:
                 pass
 
 test_mode=0
-if_cont=0
+if_cont=1
 global hid
-hid=1
+hid=0
 lll=170
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -486,18 +495,18 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=50, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=10, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=64, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
-    parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')
+    parser.add_argument('--max_norm', type=float, default=50, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.001, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=1, help='Task#')
+    parser.add_argument('--std', type=float, default=0.3, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='110', help='Task#')
+    parser.add_argument('--save_path', type=str, default='119', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
