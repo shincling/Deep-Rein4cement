@@ -314,7 +314,7 @@ class Model:
     def test_acc(self,xx,yy):
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
-        acc=0
+        acc,ttt=0,0
         batch_total_number=len(xx)/batch_size
         for idx_batch in range(batch_total_number):#对于每一个batch
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -354,16 +354,23 @@ class Model:
                     total_state[i,t,action]+=state_t[i]
                     total_state[i,t,action]/=(insert_idx+1)
 
-                if t!=path_length-1:
-                    memory_t=yy_batch
+                memory_t=total_state[:,t,:n_classes].reshape(batch_size,1,n_classes,h_dim)
+                memory_t_repeat=memory_t.repeat(path_length,axis=1)
 
-
-            pred =self.output_model_range
-            acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
-        acc=float(acc)/(batch_size*batch_total_number)
-
-        print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-        pass
+            '''开始比对total_action和yy_batch'''
+            for idx,line in enumerate(yy_batch):
+                dict={}
+                for jdx,jj in enumerate(line):
+                    if jj not in dict:#第一次见到
+                        dict[jj]=1
+                    else:
+                        if dict[jj]==1:#第二次见到
+                            ttt+=1
+                            if total_action[idx,jdx]==yy_batch[idx,jdx]:
+                                acc+=1
+                        dict[jj]+=1
+        print 'average ttt is :',float(ttt)/(batch_size*batch_total_number)
+        return acc,ttt
 
     def train(self):
         batch_size=self.batch_size
@@ -485,8 +492,8 @@ class Model:
                     print _[0]
                     print '\n\n\n'
 
-                    self.test_acc(x_test,yy_test)
-
+                    acc,ttt=self.test_acc(x_test,yy_test)
+                    print 'Test acc:{}'.format(float(acc)/ttt),'\t',acc,ttt
 
                 global hid
                 if hid:
