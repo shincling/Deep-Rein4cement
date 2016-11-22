@@ -34,73 +34,6 @@ def reward_count(total_reward, length, discout=0.99):
     result = np.dot(total_reward, discout_list)
     return result
 
-def get_dataset(dimention,path_length=10,total_labels=10,total_label=3,total_roads=10000):
-    order_list=[[],[],[],[],[],[],[],[],[],[]]
-    if not test_mode:
-        x=np.random.random((10000,dimention))
-        y=np.zeros((10000))
-        for i in (x):
-            y=int(i[0]/0.1)
-            order_list[y].append(i)
-    else:
-        for i in range(10):
-            zz=np.zeros((10))
-            zz[i]=1
-            order_list[i]=[zz]
-
-    # total_roads=1000
-    # total_lables=10
-    # path_length=10
-    total_label=3
-    final_x=np.zeros((total_roads,path_length,dimention))
-    final_y=np.zeros((total_roads,path_length))
-    for one_sample in range(total_roads):
-        label_list=random.sample(range(total_labels),total_label)
-        one_shoot_label=label_list[-1]
-        insert_idx=np.random.randint(0,path_length-1)
-        final_x[one_sample,insert_idx]=random.sample(order_list[one_shoot_label],1)[0]
-        final_y[one_sample,insert_idx]=one_shoot_label
-        final_x[one_sample,-1]=random.sample(order_list[one_shoot_label],1)[0]
-        final_y[one_sample,-1]=one_shoot_label
-        for i in range(path_length-1):
-            if i!=insert_idx:
-                label=np.random.choice(label_list[:-1])
-                final_y[one_sample,i]=label
-                final_x[one_sample,i,:]=random.sample(order_list[label],1)[0]
-    return final_x,np.int32(final_y)
-
-class BatchedDotLayer(lasagne.layers.MergeLayer):
-
-    def __init__(self, incomings, **kwargs):
-        super(BatchedDotLayer, self).__init__(incomings, **kwargs)
-        if len(incomings) != 2:
-            raise NotImplementedError
-
-    def get_output_shape_for(self, input_shapes):
-        return (input_shapes[1][0], input_shapes[1][2])
-
-    def get_output_for(self, inputs, **kwargs):
-        return T.batched_dot(inputs[0], inputs[1])
-
-class InnerProductLayer(lasagne.layers.MergeLayer):
-
-    def __init__(self, incomings, nonlinearity=None, **kwargs):
-        super(InnerProductLayer, self).__init__(incomings, **kwargs)
-        self.nonlinearity = nonlinearity
-        if len(incomings) != 2:
-            raise NotImplementedError
-
-    def get_output_shape_for(self, input_shapes):
-        return input_shapes[0][:2]
-
-    def get_output_for(self, inputs, **kwargs):
-        M = inputs[0]
-        u = inputs[1]
-        output = T.batched_dot(M, u)
-        if self.nonlinearity is not None:
-            output = self.nonlinearity(output)
-        return output
-
 class finalChoiceLayer(lasagne.layers.MergeLayer):
     def __init__(self, incomings, W_question, W_choice,W_out, nonlinearity=lasagne.nonlinearities.tanh,**kwargs):
         super(finalChoiceLayer, self).__init__(incomings, **kwargs) #？？？不知道这个super到底做什么的，会引入input_layers和input_shapes这些属性
@@ -144,7 +77,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
         self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
-        # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
         self.zero_vec = np.zeros(embedding_size, dtype=theano.config.floatX)
@@ -156,8 +89,8 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
         # if inputs[2] is not None:
@@ -180,6 +113,7 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         self.W_h_label=self.add_param(W_choice,(n_classes,1), name='Pointer_layer_W_h_label')
         self.b_h_label=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b_label')
         self.W_q_label=self.add_param(W_question,(n_classes,1), name='Pointer_layer_W_q_label')
+        self.W_o_label=self.add_param(W_out,(n_classes,n_classes), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
         self.h_dim=h_dim
         self.n_classes=n_classes
@@ -187,19 +121,21 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
     def get_output_shape_for(self, input_shapes):
         return (self.batch_size,self.max_sentlen)
     def get_output_for(self, inputs, **kwargs):
+        '''内容部分的计算'''
         activation0=(T.dot(inputs[0][:,:,:self.h_dim],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         activation2=T.batched_dot(inputs[0][:,:,:self.h_dim],inputs[1][:,:,:self.h_dim].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         alpha=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
+        '''标签部分的计算'''
         activation0=(T.dot(inputs[0][:,:,self.h_dim:],self.W_h_label)).reshape([self.batch_size,self.max_sentlen])+self.b_h_label.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
-        activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q_label).reshape([self.batch_size]).dimshuffle(0,'x')
-        activation2=T.batched_dot(inputs[0][:,:,self.h_dim:],inputs[1][:,:,self.h_dim:].reshape([self.batch_size,self.n_classes,1])).reshape([self.batch_size,self.max_sentlen])
+        activation1=T.dot(inputs[1][:,:,self.h_dim:],self.W_q_label).reshape([self.batch_size]).dimshuffle(0,'x')
+        activation2=T.batched_dot(T.dot(inputs[0][:,:,self.h_dim:],self.W_o_label),inputs[1][:,:,self.h_dim:].reshape([self.batch_size,self.n_classes,1])).reshape([self.batch_size,self.max_sentlen])
         activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         beta=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
-        alpha=lasagne.nonlinearities.softmax(alpha+beta)
+        alpha=lasagne.nonlinearities.softmax(alpha+4*beta)
 
         return alpha
 class Model:
@@ -536,16 +472,16 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=10, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=15, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=64, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
-    parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.001, help='Task#')
+    parser.add_argument('--max_norm', type=float, default=5, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.05, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=0.3, help='Task#')
+    parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='119', help='Task#')
     args=parser.parse_args()
