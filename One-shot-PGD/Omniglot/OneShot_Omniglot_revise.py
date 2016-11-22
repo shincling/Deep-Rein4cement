@@ -323,14 +323,8 @@ class Model:
 
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
             total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
-            total_reward = np.zeros([batch_size, path_length])
             total_action = np.zeros([batch_size, path_length])
-            total_probs = np.zeros([batch_size, path_length, n_classes])
 
-            xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
-            xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
-            memory_0=np.zeros((batch_size,self.n_classes,h_dim))
-            memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
             memory_t_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
 
@@ -341,21 +335,26 @@ class Model:
                 xx_batch_t_repeat=xx_batch_t.repeat(path_length,axis=1)
 
                 self.x_range_shared.set_value(xx_batch_t_repeat)
-                self.x_range_label.set_value(np.zeros_like(yy_batch_vector))#去除标签信息来预测
+                # self.x_range_label.set_value(np.zeros_like(yy_batch_vector))#去除标签信息来预测
+                self.x_range_label.set_value(yy_batch_vector)
                 self.x_range_memory.set_value(memory_t_repeat)
                 probbb_t = self.output_model_range()[0][:,0]
                 total_action[:,t]=np.argmax(probbb_t,axis=1)
 
                 state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector)[0]#这个state是包含标签信息的
                 for i in range(batch_size):#对于batch里的每一个
+                    memory_label=total_memory_label[i,t].copy()
+                    state=total_state[i,t].copy()
                     action=yy_batch[i,t]
-                    insert_idx=int(np.argwhere(total_memory_label[i,t,action]==-1)[0])
-                    total_memory_label[i,t,yy_batch[i,t],insert_idx]=action
-                    total_state[i,t,action]+=state_t[i]
-                    total_state[i,t,action]/=(insert_idx+1)
-
-                memory_t=total_state[:,t,:n_classes].reshape(batch_size,1,n_classes,h_dim)
-                memory_t_repeat=memory_t.repeat(path_length,axis=1)
+                    if t!=path_length-1:
+                        insert_idx=int(np.argwhere(memory_label[action]==-1)[0])
+                        memory_label[action,insert_idx]=action
+                        total_memory_label[i,t+1]=memory_label
+                        state[action]=state_t[i]*insert_idx+state_t[i]
+                        state[action]/=(insert_idx+1)
+                        total_state[i,t+1]=state
+                        memory_t=total_state[:,t+1,:n_classes].reshape(batch_size,1,n_classes,h_dim)
+                        memory_t_repeat=memory_t.repeat(path_length,axis=1)
 
             '''开始比对total_action和yy_batch'''
             for idx,line in enumerate(yy_batch):
@@ -532,14 +531,14 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=15, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=1, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=64, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.05, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
