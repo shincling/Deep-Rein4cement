@@ -326,7 +326,7 @@ class Model:
             total_action = np.zeros([batch_size, path_length])
 
 
-            memory_t_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
+            memory_t_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))#初始状态的memory
 
             for t in range(path_length):  # 进行了path_length步
                 '''每一步的状态应该是，前面都知道标签信息且完美存放，这个时候不知道标签信息来预测。
@@ -336,12 +336,12 @@ class Model:
 
                 self.x_range_shared.set_value(xx_batch_t_repeat)
                 # self.x_range_label.set_value(np.zeros_like(yy_batch_vector))#去除标签信息来预测
-                self.x_range_label.set_value(yy_batch_vector)
+                self.x_range_label.set_value(yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))
                 self.x_range_memory.set_value(memory_t_repeat)
                 probbb_t = self.output_model_range()[0][:,0]
                 total_action[:,t]=np.argmax(probbb_t,axis=1)
 
-                state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector)[0]#这个state是包含标签信息的
+                state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
                 for i in range(batch_size):#对于batch里的每一个
                     memory_label=total_memory_label[i,t].copy()
                     state=total_state[i,t].copy()
@@ -353,8 +353,10 @@ class Model:
                         state[action]=state_t[i]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
-                        memory_t=total_state[:,t+1,:n_classes].reshape(batch_size,1,n_classes,h_dim)
-                        memory_t_repeat=memory_t.repeat(path_length,axis=1)
+                if t!=path_length-1:
+                    memory_t=total_state[:,t+1,:n_classes].copy()
+                    memory_t=memory_t.reshape(batch_size,1,n_classes,h_dim)
+                    memory_t_repeat=memory_t.repeat(path_length,axis=1)
 
             '''开始比对total_action和yy_batch'''
             for idx,line in enumerate(yy_batch):
