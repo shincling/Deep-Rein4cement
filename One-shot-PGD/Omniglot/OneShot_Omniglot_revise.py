@@ -311,6 +311,60 @@ class Model:
 
         return action,new_memory_state,reward,new_memory_label
 
+    def test_acc(self,xx,yy):
+        batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
+        x_dim,h_dim=self.x_dim,self.h_dim
+        acc=0
+        batch_total_number=len(xx)/batch_size
+        for idx_batch in range(batch_total_number):#对于每一个batch
+            xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+            yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
+            yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
+
+            total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
+            total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
+            total_reward = np.zeros([batch_size, path_length])
+            total_action = np.zeros([batch_size, path_length])
+            total_probs = np.zeros([batch_size, path_length, n_classes])
+
+            xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
+            xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
+            memory_0=np.zeros((batch_size,self.n_classes,h_dim))
+            memory_0_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
+
+            memory_t_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))
+
+            for t in range(path_length):  # 进行了path_length步
+                '''每一步的状态应该是，前面都知道标签信息且完美存放，这个时候不知道标签信息来预测。
+                先设定t时候的x，和memory，然后得到probas,然后更新memory'''
+                xx_batch_t=xx_batch[:,t].reshape([batch_size,1,x_dim[0],x_dim[1]])
+                xx_batch_t_repeat=xx_batch_t.repeat(path_length,axis=1)
+
+                self.x_range_shared.set_value(xx_batch_t_repeat)
+                self.x_range_label.set_value(np.zeros_like(yy_batch_vector))#去除标签信息来预测
+                self.x_range_memory.set_value(memory_t_repeat)
+                probbb_t = self.output_model_range()[0][:,0]
+                total_action[:,t]=np.argmax(probbb_t,axis=1)
+
+                state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector)[0]#这个state是包含标签信息的
+                for i in range(batch_size):#对于batch里的每一个
+                    action=yy_batch[i,t]
+                    insert_idx=int(np.argwhere(total_memory_label[i,t,action]==-1)[0])
+                    total_memory_label[i,t,yy_batch[i,t],insert_idx]=action
+                    total_state[i,t,action]+=state_t[i]
+                    total_state[i,t,action]/=(insert_idx+1)
+
+                if t!=path_length-1:
+                    memory_t=yy_batch
+
+
+            pred =self.output_model_range
+            acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
+        acc=float(acc)/(batch_size*batch_total_number)
+
+        print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
+        pass
+
     def train(self):
         batch_size=self.batch_size
         n_paths=self.n_paths
@@ -429,11 +483,10 @@ class Model:
                     print '\n'
                     # print self.ppp.eval()
                     print _[0]
-
-                    # print self.www.eval()
-                    # print total_probs[0]
-                    # print _[0]
                     print '\n\n\n'
+
+                    self.test_acc(x_test,yy_test)
+
 
                 global hid
                 if hid:
