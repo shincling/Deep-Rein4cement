@@ -194,6 +194,7 @@ class Model:
 
         l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,1024,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
@@ -409,8 +410,12 @@ class Model:
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-                    yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
-                    # yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
+                    # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
+                    yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
+                    if 1:
+                        xx_batch[1:]=xx_batch[0]
+                        yy_batch[1:]=yy_batch[0]
+                        yy_batch_vector[1:]=yy_batch_vector[0]
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
