@@ -32,6 +32,9 @@ def reward_count(total_reward, length, discout=0.99):
         step = discout ** idx
         discout_list[idx] = step
     result = np.dot(total_reward, discout_list)
+    global same_batch
+    if same_batch:
+        result=result-np.mean(result)
     return result
 
 class finalChoiceLayer(lasagne.layers.MergeLayer):
@@ -412,7 +415,8 @@ class Model:
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
-                    if 1:
+                    global same_batch
+                    if same_batch:
                         xx_batch[1:]=xx_batch[0]
                         yy_batch[1:]=yy_batch[0]
                         yy_batch_vector[1:]=yy_batch_vector[0]
@@ -533,6 +537,8 @@ if_cont=1
 global hid
 hid=0
 lll=170
+global same_batch
+same_batch=1
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -547,7 +553,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.3, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
