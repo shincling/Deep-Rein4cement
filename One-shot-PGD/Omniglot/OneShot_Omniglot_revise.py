@@ -17,8 +17,8 @@ def action_to_vector_real(x, n_classes): #x是bs*path_length
             result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
     return np.int32(result)
 
-def action_to_vector(x, n_classes): #x是bs*path_length
-    p=1.7 #p是标签正常的概率
+def action_to_vector(x, n_classes,p=0): #x是bs*path_length
+    # p=0 #p是标签正常的概率
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
     for i in range(x.shape[0]):
         for j in range(x.shape[1]):
@@ -319,7 +319,8 @@ class Model:
         for idx_batch in range(batch_total_number):#对于每一个batch
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-            yy_batch_vector=action_to_vector(yy_batch,self.n_classes)
+            yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
+            # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
 
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
             total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
@@ -409,6 +410,7 @@ class Model:
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
+                    # yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]

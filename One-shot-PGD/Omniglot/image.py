@@ -36,7 +36,7 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
 def shuffle_label(y,counts):
     for i in y:
         uni_labes=list(set(list(i)))
-        random_labels=random.sample(range(10),counts)
+        random_labels=random.sample(range(5),counts)
         for idx,j in enumerate(i):
             for ind in range(counts):
                 if j==uni_labes[ind]:
@@ -79,7 +79,7 @@ labels=get_labels(pathdir)
 all_count=len(labels)
 ratio=0.7
 size=(20,20)
-total_labels_per_seq=3
+total_labels_per_seq=5
 path_length=11
 total_roads=1000
 cnn_only=0
