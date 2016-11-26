@@ -124,6 +124,8 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
     def get_output_shape_for(self, input_shapes):
         return (self.batch_size,self.max_sentlen)
     def get_output_for(self, inputs, **kwargs):
+        '''input[0]是memory[bs*path_length,n_classes,h_dim]
+           input[1]是hidden[bs*path_length,1,h_dim]'''
         '''内容部分的计算'''
         activation0=(T.dot(inputs[0][:,:,:self.h_dim],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
@@ -319,11 +321,13 @@ class Model:
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
         acc,ttt=0,0
+        acc_end=0
         batch_total_number=len(xx)/batch_size
         for idx_batch in range(batch_total_number):#对于每一个batch
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
+            yy_batch_vector_real=action_to_vector_real(yy_batch,self.n_classes)
             # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
 
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
@@ -346,7 +350,8 @@ class Model:
                 probbb_t = self.output_model_range()[0][:,0]
                 total_action[:,t]=np.argmax(probbb_t,axis=1)
 
-                state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
+                # state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
+                state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector_real[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
                 for i in range(batch_size):#对于batch里的每一个
                     memory_label=total_memory_label[i,t].copy()
                     state=total_state[i,t].copy()
@@ -355,7 +360,7 @@ class Model:
                         insert_idx=int(np.argwhere(memory_label[action]==-1)[0])
                         memory_label[action,insert_idx]=action
                         total_memory_label[i,t+1]=memory_label
-                        state[action]=state_t[i]*insert_idx+state_t[i]
+                        state[action]=state[action]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
                 if t!=path_length-1:
@@ -375,8 +380,12 @@ class Model:
                             if total_action[idx,jdx]==yy_batch[idx,jdx]:
                                 acc+=1
                         dict[jj]+=1
+
+                if total_action[idx,-1]==yy_batch[idx,-1]:
+                    acc_end+=1
+
         print 'average ttt is :',float(ttt)/(batch_size*batch_total_number)
-        return acc,ttt
+        return acc,ttt,acc_end,batch_total_number*batch_size
 
     def train(self):
         batch_size=self.batch_size
@@ -505,8 +514,9 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    acc,ttt=self.test_acc(x_test,yy_test)
+                    acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                     print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt
+                    print 'Test one-shot acc_end:{}'.format(float(acc_end)/ttt_end),'\t',acc_end,ttt_end
                     print '\n\n\n'
 
                 global hid
@@ -540,7 +550,7 @@ global hid
 hid=0
 lll=170
 global same_batch
-same_batch=1
+same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -549,7 +559,7 @@ if __name__=='__main__':
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=10, help='Dimension#')
-    parser.add_argument('--n_classes', type=int, default=10, help='Task#')
+    parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=64, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
@@ -558,7 +568,7 @@ if __name__=='__main__':
     parser.add_argument('--lr', type=float, default=0.5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
     parser.add_argument('--std', type=float, default=0.3, help='Task#')
-    parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
+    parser.add_argument('--update_method', type=str, default='adagrad', help='Task#')
     parser.add_argument('--save_path', type=str, default='119', help='Task#')
     args=parser.parse_args()
     print '*' * 80
