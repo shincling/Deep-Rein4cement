@@ -297,7 +297,7 @@ class Model:
                     label_count_dict[jj]=1
             max_num=max(label_count_dict.values())
             if 1:
-                if this_label in label_count_dict and len(label_count_dict)==1:
+                if this_label in label_count_dict and len(label_count_dict)==1:#如果这个样本存放的action里面和它都是同label的
                     if idx_path_length==self.path_length-1:
                         reward=10
                         print '100~!\n'
@@ -447,13 +447,13 @@ class Model:
                     probbb = self.output_model_range()[0]
                     probs_sample_0 = probbb[:, 0]
 
-                    total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
+                    total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])#整个state是memory和当前x的hidden的结合
                     total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
                     total_reward = np.zeros([batch_size, path_length])
                     total_action = np.zeros([batch_size, path_length])
                     total_probs = np.zeros([batch_size, path_length, n_classes])
 
-                    total_state[:, 0, -1] =self.output_hidden(xx_batch_0_repeat,yy_batch_vector)[0]
+                    total_state[:, 0, -1] =self.output_hidden(xx_batch_0_repeat,yy_batch_vector)[0]#这里是把当前（第一个）x的hidden计算出来，然后填给state
                     total_state[:, 0, :-1] = memory_0
                     '''state是[bs,class+1,x_dim]尺度的东西，第二个维度前class个是memory状态,最后一个是当前输入的隐层表达'''
                     total_probs[:, 0, :] = probs_sample_0
@@ -502,6 +502,8 @@ class Model:
                     print '\n'
                     # print self.ppp.eval()
                     print _[0]
+                    # print '\n'
+                    # print total_probs[0]
 
                     acc,ttt=self.test_acc(x_test,yy_test)
                     print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt
