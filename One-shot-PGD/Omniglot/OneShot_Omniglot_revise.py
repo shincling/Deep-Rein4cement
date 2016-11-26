@@ -388,6 +388,7 @@ class Model:
         return acc,ttt,acc_end,batch_total_number*batch_size
 
     def train(self):
+        high_acc,high_acc_end=0,0
         batch_size=self.batch_size
         n_paths=self.n_paths
         path_length=self.path_length
@@ -515,8 +516,12 @@ class Model:
                     # print total_probs[0]
 
                     acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
-                    print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt
-                    print 'Test one-shot acc_end:{}'.format(float(acc_end)/ttt_end),'\t',acc_end,ttt_end
+                    if (float(acc)/ttt)>high_acc:
+                        high_acc=float(acc)/ttt
+                    if (float(acc_end)/ttt_end)>high_acc_end:
+                        high_acc_end=float(acc_end)/ttt_end
+                    print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt,'highest acc:',high_acc
+                    print 'Test one-shot acc_end:{}'.format(float(acc_end)/ttt_end),'\t',acc_end,ttt_end,'highest acc end:',high_acc_end
                     print '\n\n\n'
 
                 global hid
