@@ -32,9 +32,9 @@ def reward_count(total_reward, length, discout=0.99):
         step = discout ** idx
         discout_list[idx] = step
     result = np.dot(total_reward, discout_list)
-    global same_batch
-    if same_batch:
-        result=result-np.mean(result)
+    # global same_batch
+    # if same_batch:
+    #     result=result-np.mean(result)
     return result
 
 class finalChoiceLayer(lasagne.layers.MergeLayer):
@@ -370,8 +370,8 @@ class Model:
 
             '''开始比对total_action和yy_batch'''
             for idx,line in enumerate(yy_batch):
-                print line
-                print total_action[idx],'\n'
+                # print line
+                # print total_action[idx],'\n'
                 dict={}
                 for jdx,jj in enumerate(line):
                     if jj not in dict:#第一次见到
@@ -429,9 +429,14 @@ class Model:
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
                     global same_batch
                     if same_batch:
-                        xx_batch[1:]=xx_batch[0]
-                        yy_batch[1:]=yy_batch[0]
-                        yy_batch_vector[1:]=yy_batch_vector[0]
+                        inn=batch_size/16#一个batch里面有16个样本，每个重复inn次
+                        xxx=xx_batch.copy()
+                        yyy=yy_batch.copy()
+                        yyy_vector=yy_batch_vector.copy()
+                        for line in range(16):
+                            xx_batch[(line)*inn:(line+1)*inn]=xxx[line]
+                            yy_batch[(line)*inn:(line+1)*inn]=yyy[line]
+                            yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[line]
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -557,7 +562,7 @@ global hid
 hid=0
 lll=170
 global same_batch
-same_batch=0
+same_batch=1
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -567,7 +572,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=10, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=64, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=96, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=100, help='Task#')
