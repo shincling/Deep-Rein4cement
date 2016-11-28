@@ -203,6 +203,22 @@ class Model:
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
+        if hid==1:
+            l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
+            xx_label=T.matrix()
+            l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
+            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
+            # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.h_dim])
+            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+            ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_label:xx_label})
+            hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
+            hidden_cost = T.mean(T.nnet.categorical_crossentropy(ppp, xx_label))
+            pred = T.argmax(ppp, axis=1)
+            hidden_grads=T.grad(hidden_cost,hidden_params)
+            hidden_updates =lasagne.updates.nesterov_momentum(hidden_cost, hidden_params, learning_rate=0.01)
+            self.hid = theano.function([x_range,xx_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
+            self.hid_out= theano.function([x_range],[pred],on_unused_input='ignore',allow_input_downcast=True)
+            self.nnn=l_range_probas
         if if_cont==1:
             l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
             self.h_dim+=self.n_classes
@@ -248,24 +264,7 @@ class Model:
         self.output_model_range_updates = theano.function([],[probas_range,cost,hidden],updates=updates,givens=givens,on_unused_input='ignore',allow_input_downcast=True)
         self.output_hidden = theano.function([x_range,x_label],[hidden[:,0]],on_unused_input='ignore',allow_input_downcast=True)
 
-        if hid==1:
-            l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
-            xx_label=T.matrix()
-            l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
-            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
-            # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.h_dim])
-            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
-            ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_label:xx_label})
-            hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
-            hidden_cost = T.mean(T.nnet.categorical_crossentropy(ppp, xx_label))
-            pred = T.argmax(ppp, axis=1)
-            hidden_grads=T.grad(hidden_cost,hidden_params)
-            hidden_updates =lasagne.updates.nesterov_momentum(hidden_cost, hidden_params, learning_rate=0.01)
-            self.hid = theano.function([x_range,xx_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
-            self.hid_out= theano.function([x_range],[pred],on_unused_input='ignore',allow_input_downcast=True)
-            self.nnn=l_range_probas
-
-        if 1 and hid:
+        if 0 and hid:
             # load_params = pickle.load(open('params/params_nnn0.701041666667_110_1_64_2016-11-17 15:38:19'))
             load_params = pickle.load(open('params/params_nnn0.851041666667_114_8_29_2016-11-18 22:19:48'))
             lasagne.layers.set_all_param_values(self.nnn, load_params)
@@ -327,8 +326,8 @@ class Model:
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
-            yy_batch_vector_real=action_to_vector_real(yy_batch,self.n_classes)
             # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
+            yy_batch_vector_real=action_to_vector_real(yy_batch,self.n_classes)
 
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
             total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
@@ -360,6 +359,7 @@ class Model:
                         insert_idx=int(np.argwhere(memory_label[action]==-1)[0])
                         memory_label[action,insert_idx]=action
                         total_memory_label[i,t+1]=memory_label
+                        # print state_t[i]-state[action],'hhh',i,t
                         state[action]=state[action]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
@@ -370,6 +370,8 @@ class Model:
 
             '''开始比对total_action和yy_batch'''
             for idx,line in enumerate(yy_batch):
+                print line
+                print total_action[idx],'\n'
                 dict={}
                 for jdx,jj in enumerate(line):
                     if jj not in dict:#第一次见到
