@@ -32,9 +32,12 @@ def reward_count(total_reward, length, discout=0.99):
         step = discout ** idx
         discout_list[idx] = step
     result = np.dot(total_reward, discout_list)
-    # global same_batch
-    # if same_batch:
-    #     result=result-np.mean(result)
+    global same_batch
+    if same_batch:
+        inn=total_reward.shape[0]/same_batch#每个样本重复inn次
+        for line in range(same_batch):
+            patch=np.mean(total_reward[inn*line:(line+1)*inn])
+            result[inn*line:(line+1)*inn]-=patch
     return result
 
 class finalChoiceLayer(lasagne.layers.MergeLayer):
@@ -140,7 +143,7 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         beta=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
-        alpha=lasagne.nonlinearities.softmax(alpha+4*beta)
+        alpha=lasagne.nonlinearities.softmax(alpha+10*beta)
 
         return alpha
 class Model:
@@ -184,7 +187,8 @@ class Model:
         self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.h_dim),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
-        D1, D2, D3 = lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std), lasagne.init.Normal(std=self.std)
+        D1, D2, D3 = lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0)
+        # D1, D2, D3 = lasagne.init.Uniform(1,2), lasagne.init.Uniform(-5,5), lasagne.init.Uniform(1,2)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
         l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.tanh)
@@ -199,8 +203,9 @@ class Model:
 
         l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,1024,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=None) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         if hid==1:
@@ -301,14 +306,15 @@ class Model:
                 if this_label in label_count_dict and len(label_count_dict)==1:#如果这个样本存放的action里面和它都是同label的
                     if idx_path_length==self.path_length-1:
                         reward=10
-                        print '100~!\n'
+                        # print '100~!\n'
                     else:
                         reward=10
                 else:
                     reward=-3
         #更新状态，加权平均，更新label记录
-        now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
-        now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
+        now_state[action]=now_state[-1]+(now_state[action])
+        # now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
+        # now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
         new_memory_state=now_state[:-1]
         now_memory_label[action][index_to_insert]=this_label
         new_memory_label=now_memory_label
@@ -319,8 +325,10 @@ class Model:
     def test_acc(self,xx,yy):
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
-        acc,ttt=0,0
-        acc_end=0
+        acc,ttt=0.,0.
+        acc2,ttt2=0.,0.
+        acc3,ttt3=0.,0.
+        acc_end=0.
         batch_total_number=len(xx)/batch_size
         for idx_batch in range(batch_total_number):#对于每一个batch
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -332,6 +340,7 @@ class Model:
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
             total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
             total_action = np.zeros([batch_size, path_length])
+            total_probas = np.zeros([batch_size, path_length,n_classes])
 
 
             memory_t_repeat=np.zeros((batch_size,path_length,self.n_classes,h_dim))#初始状态的memory
@@ -339,6 +348,7 @@ class Model:
             for t in range(path_length):  # 进行了path_length步
                 '''每一步的状态应该是，前面都知道标签信息且完美存放，这个时候不知道标签信息来预测。
                 先设定t时候的x，和memory，然后得到probas,然后更新memory'''
+                # print memory_t_repeat[0][0],'\n'
                 xx_batch_t=xx_batch[:,t].reshape([batch_size,1,x_dim[0],x_dim[1]])
                 xx_batch_t_repeat=xx_batch_t.repeat(path_length,axis=1)
 
@@ -348,6 +358,10 @@ class Model:
                 self.x_range_memory.set_value(memory_t_repeat)
                 probbb_t = self.output_model_range()[0][:,0]
                 total_action[:,t]=np.argmax(probbb_t,axis=1)
+                total_probas[:,t]=probbb_t
+                # print xx_batch_t_repeat[0,0,8:12,8:12],'\n'
+                # print memory_t_repeat[0,0],'\n'
+                # print probbb_t[0],'\n'
 
                 # state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
                 state_t=self.output_hidden(xx_batch_t_repeat,yy_batch_vector_real[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))[0]#这个state是包含标签信息的
@@ -360,7 +374,9 @@ class Model:
                         memory_label[action,insert_idx]=action
                         total_memory_label[i,t+1]=memory_label
                         # print state_t[i]-state[action],'hhh',i,t
-                        state[action]=state[action]*insert_idx+state_t[i]
+                        state[action]=state[action]+state_t[i]
+                        # state[action]=state[action]*insert_idx+state_t[i]
+                        # state[action]=state[action]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
                 if t!=path_length-1:
@@ -372,6 +388,7 @@ class Model:
             for idx,line in enumerate(yy_batch):
                 # print line
                 # print total_action[idx],'\n'
+                # print total_probas[idx],'\n'
                 dict={}
                 for jdx,jj in enumerate(line):
                     if jj not in dict:#第一次见到
@@ -381,13 +398,23 @@ class Model:
                             ttt+=1
                             if total_action[idx,jdx]==yy_batch[idx,jdx]:
                                 acc+=1
+                        if dict[jj]==2:#第二次见到
+                            ttt2+=1
+                            if total_action[idx,jdx]==yy_batch[idx,jdx]:
+                                acc2+=1
+                        if dict[jj]==3:#第二次见到
+                            ttt3+=1
+                            if total_action[idx,jdx]==yy_batch[idx,jdx]:
+                                acc3+=1
                         dict[jj]+=1
 
                 if total_action[idx,-1]==yy_batch[idx,-1]:
                     acc_end+=1
 
         print 'average ttt is :',float(ttt)/(batch_size*batch_total_number)
-        return acc,ttt,acc_end,batch_total_number*batch_size
+        print 'average ttt2 is :',float(ttt2)/(batch_size*batch_total_number),acc2/ttt2
+        print 'average ttt3 is :',float(ttt3)/(batch_size*batch_total_number),acc3/ttt3
+        return acc,ttt,acc_end,batch_total_number*batch_size,
 
     def train(self):
         high_acc,high_acc_end=0,0
@@ -429,14 +456,15 @@ class Model:
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
                     global same_batch
                     if same_batch:
-                        inn=batch_size/16#一个batch里面有16个样本，每个重复inn次
+                        inn=batch_size/same_batch#一个batch里面有same_batch个样本，每个重复inn次
                         xxx=xx_batch.copy()
                         yyy=yy_batch.copy()
                         yyy_vector=yy_batch_vector.copy()
-                        for line in range(16):
-                            xx_batch[(line)*inn:(line+1)*inn]=xxx[line]
-                            yy_batch[(line)*inn:(line+1)*inn]=yyy[line]
-                            yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[line]
+                        for line in range(same_batch):
+                            rr=np.random.randint(0,xxx.shape[0])
+                            xx_batch[(line)*inn:(line+1)*inn]=xxx[rr]
+                            yy_batch[(line)*inn:(line+1)*inn]=yyy[rr]
+                            yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[rr]
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -513,6 +541,7 @@ class Model:
                     tmp_reward += espect_reward
                     print 'cost:{},average_reward:{}'.format(cost,aver_reward)
                     print total_state[0][-1][:,-20:]
+                    print yy_batch[0]
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
@@ -562,7 +591,7 @@ global hid
 hid=0
 lll=170
 global same_batch
-same_batch=1
+same_batch=64
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -570,17 +599,17 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=10, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=50, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=96, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=960, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=100, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=1, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
     parser.add_argument('--lr', type=float, default=0.5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=0.3, help='Task#')
-    parser.add_argument('--update_method', type=str, default='adagrad', help='Task#')
+    parser.add_argument('--std', type=float, default=3, help='Task#')
+    parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='119', help='Task#')
     args=parser.parse_args()
     print '*' * 80
