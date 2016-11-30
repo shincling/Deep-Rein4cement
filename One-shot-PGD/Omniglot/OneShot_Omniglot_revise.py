@@ -36,7 +36,7 @@ def reward_count(total_reward, length, discout=0.99):
     if same_batch:
         inn=total_reward.shape[0]/same_batch#每个样本重复inn次
         for line in range(same_batch):
-            patch=np.mean(total_reward[inn*line:(line+1)*inn])
+            patch=np.mean(result[inn*line:(line+1)*inn])
             result[inn*line:(line+1)*inn]-=patch
     return result
 
@@ -312,9 +312,9 @@ class Model:
                 else:
                     reward=-3
         #更新状态，加权平均，更新label记录
-        now_state[action]=now_state[-1]+(now_state[action])
-        # now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
-        # now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
+        # now_state[action]=now_state[-1]+(now_state[action])
+        now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
+        now_state[action]=now_state[action]/(now_memory_label_count[action]+1)
         new_memory_state=now_state[:-1]
         now_memory_label[action][index_to_insert]=this_label
         new_memory_label=now_memory_label
@@ -374,9 +374,9 @@ class Model:
                         memory_label[action,insert_idx]=action
                         total_memory_label[i,t+1]=memory_label
                         # print state_t[i]-state[action],'hhh',i,t
-                        state[action]=state[action]+state_t[i]
-                        # state[action]=state[action]*insert_idx+state_t[i]
-                        # state[action]=state[action]*insert_idx+state_t[i]
+                        # state[action]=state[action]+state_t[i]
+                        state[action]=state[action]*insert_idx+state_t[i]
+                        state[action]=state[action]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
                 if t!=path_length-1:
@@ -571,11 +571,17 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-                    if acc>0.85:
+                    acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
+                    if (float(acc_oneshot)/ttt)>high_acc:
+                        high_acc=float(acc_oneshot)/ttt
+                    if (float(acc_oneshot_end)/ttt_end)>high_acc_end:
+                        high_acc_end=float(acc_oneshot_end)/ttt_end
+                    print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
+                    print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
+                    print '\n\n\n'
+                    if acc>0.90:
                         hid=0
                         prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
-                        pickle.dump(prev_weights,open('params/params_nnn{}_{}_{}_{}_{}'.format(acc,save_path,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
-
 
             try:
                 print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /batch_total_number, tmp_result /batch_total_number, tmp_reward/batch_total_number, save_path)
@@ -592,6 +598,7 @@ hid=0
 lll=170
 global same_batch
 same_batch=64
+# same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -604,7 +611,7 @@ if __name__=='__main__':
     parser.add_argument('--batch_size', type=int, default=960, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=1, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=5, help='Task#')
     parser.add_argument('--lr', type=float, default=0.5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.99, help='Task#')
