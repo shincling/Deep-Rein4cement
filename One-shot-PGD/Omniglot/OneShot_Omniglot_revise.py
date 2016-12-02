@@ -114,11 +114,11 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         self.batch_size,self.max_sentlen,self.embedding_size=batch_size,max_sentlen,h_dim
         self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
         self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
-        self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
+        # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
         # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         self.W_h_label=self.add_param(W_choice,(n_classes,1), name='Pointer_layer_W_h_label')
         self.b_h_label=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b_label')
-        self.W_q_label=self.add_param(W_question,(n_classes,1), name='Pointer_layer_W_q_label')
+        # self.W_q_label=self.add_param(W_question,(n_classes,1), name='Pointer_layer_W_q_label')
         self.W_o_label=self.add_param(W_out,(n_classes,n_classes), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
         self.h_dim=h_dim
@@ -131,16 +131,18 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
            input[1]是hidden[bs*path_length,1,h_dim]'''
         '''内容部分的计算'''
         activation0=(T.dot(inputs[0][:,:,:self.h_dim],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
-        activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
+        # activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         activation2=T.batched_dot(inputs[0][:,:,:self.h_dim],inputs[1][:,:,:self.h_dim].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        norm2=T.sqrt(T.sum(T.mul(inputs[0][:,:,:self.h_dim],inputs[0][:,:,:self.h_dim]),axis=2))+0.0000001
+        activation2=activation2/norm2
+        activation=(self.nonlinearity(activation0)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         alpha=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
         '''标签部分的计算'''
         activation0=(T.dot(inputs[0][:,:,self.h_dim:],self.W_h_label)).reshape([self.batch_size,self.max_sentlen])+self.b_h_label.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
-        activation1=T.dot(inputs[1][:,:,self.h_dim:],self.W_q_label).reshape([self.batch_size]).dimshuffle(0,'x')
+        # activation1=T.dot(inputs[1][:,:,self.h_dim:],self.W_q_label).reshape([self.batch_size]).dimshuffle(0,'x')
         activation2=T.batched_dot(T.dot(inputs[0][:,:,self.h_dim:],self.W_o_label),inputs[1][:,:,self.h_dim:].reshape([self.batch_size,self.n_classes,1])).reshape([self.batch_size,self.max_sentlen])
-        activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        activation=(self.nonlinearity(activation0)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         beta=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
         alpha=lasagne.nonlinearities.softmax(alpha+10*beta)
@@ -376,7 +378,6 @@ class Model:
                         # print state_t[i]-state[action],'hhh',i,t
                         # state[action]=state[action]+state_t[i]
                         state[action]=state[action]*insert_idx+state_t[i]
-                        state[action]=state[action]*insert_idx+state_t[i]
                         state[action]/=(insert_idx+1)
                         total_state[i,t+1]=state
                 if t!=path_length-1:
@@ -582,6 +583,7 @@ class Model:
                     if acc>0.90:
                         hid=0
                         prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
+                        pickle.dump(prev_weights,open('params/params_nnn_{}_{}_{}_{}'.format(acc,epoch,repeat_time,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'wb'))
 
             try:
                 print 'cost:{},average_reward:{},espect_reward:{},save_folder:{}'.format(tmp_cost /batch_total_number, tmp_result /batch_total_number, tmp_reward/batch_total_number, save_path)
