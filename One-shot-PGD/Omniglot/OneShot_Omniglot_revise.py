@@ -455,17 +455,6 @@ class Model:
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
                     yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
-                    global same_batch
-                    if same_batch:
-                        inn=batch_size/same_batch#一个batch里面有same_batch个样本，每个重复inn次
-                        xxx=xx_batch.copy()
-                        yyy=yy_batch.copy()
-                        yyy_vector=yy_batch_vector.copy()
-                        for line in range(same_batch):
-                            rr=np.random.randint(0,xxx.shape[0])
-                            xx_batch[(line)*inn:(line+1)*inn]=xxx[rr]
-                            yy_batch[(line)*inn:(line+1)*inn]=yyy[rr]
-                            yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[rr]
 
                     global hid
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -480,6 +469,20 @@ class Model:
                         print y_batch[:,0][0:100]
                         print 'right rate:',acc
                         continue
+
+                    global same_batch
+                    if same_batch:
+                        inn=batch_size/same_batch#一个batch里面有same_batch个样本，每个重复inn次
+                        xxx=xx_batch.copy()
+                        yyy=yy_batch.copy()
+                        yyy_vector=yy_batch_vector.copy()
+                        for line in range(same_batch):
+                            rr=np.random.randint(0,xxx.shape[0])
+                            xx_batch[(line)*inn:(line+1)*inn]=xxx[rr]
+                            yy_batch[(line)*inn:(line+1)*inn]=yyy[rr]
+                            yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[rr]
+
+
 
                     xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
                     xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
