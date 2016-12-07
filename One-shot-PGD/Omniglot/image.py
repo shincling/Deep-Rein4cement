@@ -46,7 +46,11 @@ def shuffle_label(y,counts):
 
 def build(path,pathdir,files,labels,all_count,ratio,size):
 
-    train_labels=random.sample(labels,int(ratio*len(labels)))
+    if not label_fixed:
+        train_labels=random.sample(labels,int(ratio*len(labels)))
+    else:
+        train_labels=labels[:int(ratio*len(labels))]
+        print train_labels[:20]
     for i in train_labels:
         labels.remove(i)
     test_labels=labels
@@ -83,6 +87,7 @@ total_labels_per_seq=5
 path_length=11
 total_roads=3200
 cnn_only=0
+label_fixed=1
 if cnn_only:
     ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
