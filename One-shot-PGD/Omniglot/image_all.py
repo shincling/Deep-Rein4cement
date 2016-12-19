@@ -92,7 +92,7 @@ if cnn_only:
     # ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
     x_train,y_train,x_test,y_test=build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size)
-    del files
+    del files,files_eval
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 # if __name__=="__main__":
