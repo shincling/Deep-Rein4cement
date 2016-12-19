@@ -80,10 +80,10 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #     incomings.append(mask_input)
         batch_size, max_sentlen ,embedding_size = self.input_shapes[0]
         self.batch_size,self.max_sentlen,self.embedding_size=batch_size,max_sentlen,embedding_size
-        self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
-        self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
-        self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
-        self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        # self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
+        # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
+        # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
+        # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
         self.zero_vec = np.zeros(embedding_size, dtype=theano.config.floatX)
@@ -93,11 +93,12 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         return (self.batch_size,self.max_sentlen)
     def get_output_for(self, inputs, **kwargs):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
-        activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
-        activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
+        # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
+        # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        activation=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
         # if inputs[2] is not None:
         #     final=inputs[2]*final-(1-inputs[2])*1000000
@@ -112,12 +113,12 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         batch_size, max_sentlen ,embedding_size = self.input_shapes[0]
         embedding_size=h_dim
         self.batch_size,self.max_sentlen,self.embedding_size=batch_size,max_sentlen,h_dim
-        self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
-        self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
+        # self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
+        # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
         # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
-        self.W_h_label=self.add_param(W_choice,(n_classes,1), name='Pointer_layer_W_h_label')
-        self.b_h_label=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b_label')
+        # self.W_h_label=self.add_param(W_choice,(n_classes,1), name='Pointer_layer_W_h_label')
+        # self.b_h_label=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b_label')
         # self.W_q_label=self.add_param(W_question,(n_classes,1), name='Pointer_layer_W_q_label')
         self.W_o_label=self.add_param(W_out,(n_classes,n_classes), name='Pointer_layer_W_o')
         self.nonlinearity=nonlinearity
@@ -130,22 +131,23 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         '''input[0]是memory[bs*path_length,n_classes,h_dim]
            input[1]是hidden[bs*path_length,1,h_dim]'''
         '''内容部分的计算'''
-        activation0=(T.dot(inputs[0][:,:,:self.h_dim],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
+        # activation0=(T.dot(inputs[0][:,:,:self.h_dim],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1][:,:,:self.h_dim],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         activation2=T.batched_dot(inputs[0][:,:,:self.h_dim],inputs[1][:,:,:self.h_dim].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation2=T.batched_dot(T.dot(inputs[0][:,:,:self.h_dim],self.W_o),inputs[1][:,:,:self.h_dim].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         norm2=T.sqrt(T.sum(T.mul(inputs[0][:,:,:self.h_dim],inputs[0][:,:,:self.h_dim]),axis=2))+0.0000001
-        activation2=activation2/norm2
-        activation=(self.nonlinearity(activation0)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        # activation2=activation2/norm2
+        activation=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         alpha=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
         '''标签部分的计算'''
-        activation0=(T.dot(inputs[0][:,:,self.h_dim:],self.W_h_label)).reshape([self.batch_size,self.max_sentlen])+self.b_h_label.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
+        # activation0=(T.dot(inputs[0][:,:,self.h_dim:],self.W_h_label)).reshape([self.batch_size,self.max_sentlen])+self.b_h_label.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1][:,:,self.h_dim:],self.W_q_label).reshape([self.batch_size]).dimshuffle(0,'x')
         activation2=T.batched_dot(T.dot(inputs[0][:,:,self.h_dim:],self.W_o_label),inputs[1][:,:,self.h_dim:].reshape([self.batch_size,self.n_classes,1])).reshape([self.batch_size,self.max_sentlen])
-        activation=(self.nonlinearity(activation0)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        activation=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         beta=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
-        alpha=lasagne.nonlinearities.softmax(alpha+10*beta)
+        alpha=lasagne.nonlinearities.softmax(alpha+5*beta)
 
         return alpha
 class Model:
@@ -193,8 +195,8 @@ class Model:
         # D1, D2, D3 = lasagne.init.Uniform(1,2), lasagne.init.Uniform(-5,5), lasagne.init.Uniform(1,2)
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
-        l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.tanh)
-        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        # l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.tanh)
+        l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=64,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
         l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
@@ -203,12 +205,14 @@ class Model:
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,1024,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=None) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
+        # l_range_dense2_origin1=lasagne.layers.DenseLayer(l_range_dense2,lll,W=D3,b=None,nonlinearity=None)
+        # l_range_dense2_origin2=lasagne.layers.ReshapeLayer(l_range_dense2_origin1,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
         if hid==1:
             l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
@@ -216,7 +220,7 @@ class Model:
             l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
             l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
             # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.h_dim])
-            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=D3,nonlinearity=lasagne.nonlinearities.softmax)
+            l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=l_range_dense2_origin1.W,b=None,nonlinearity=lasagne.nonlinearities.softmax)
             ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_label:xx_label})
             hidden_params=lasagne.layers.helper.get_all_params(l_range_probas,trainable=True)
             hidden_cost = T.mean(T.nnet.categorical_crossentropy(ppp, xx_label))
@@ -273,7 +277,7 @@ class Model:
 
         if 0 and hid:
             # load_params = pickle.load(open('params/params_nnn0.701041666667_110_1_64_2016-11-17 15:38:19'))
-            load_params = pickle.load(open('params/params_nnn0.851041666667_114_8_29_2016-11-18 22:19:48'))
+            load_params = pickle.load(open('params/params_nnn_0.90125_7_6_2016-12-07 20:17:49'))
             lasagne.layers.set_all_param_values(self.nnn, load_params)
             print 'load succeed!'
             global hid
@@ -313,6 +317,17 @@ class Model:
                         reward=10
                 else:
                     reward=-3
+            if 0:
+                if this_label in label_count_dict and len(label_count_dict)==1:#如果这个样本存放的action里面和它都是同label的
+                    if idx_path_length==self.path_length-1:
+                        reward=1000
+                        for xx in now_memory_label:
+                            if xx[0]!=-1 and len(set(xx))>2:
+                                reward=-3
+                                break
+                        if reward==10:
+                            print '100~!\n'
+
         #更新状态，加权平均，更新label记录
         # now_state[action]=now_state[-1]+(now_state[action])
         now_state[action]=now_state[-1]+(now_state[action]*now_memory_label_count[action])
@@ -555,13 +570,14 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
-                    if (float(acc)/ttt)>high_acc:
-                        high_acc=float(acc)/ttt
-                    if (float(acc_end)/ttt_end)>high_acc_end:
-                        high_acc_end=float(acc_end)/ttt_end
-                    print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt,'highest acc:',high_acc
-                    print 'Test one-shot acc_end:{}'.format(float(acc_end)/ttt_end),'\t',acc_end,ttt_end,'highest acc end:',high_acc_end
+                    if repeat_time%5==0:
+                        acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
+                        if (float(acc)/ttt)>high_acc:
+                            high_acc=float(acc)/ttt
+                        if (float(acc_end)/ttt_end)>high_acc_end:
+                            high_acc_end=float(acc_end)/ttt_end
+                        print 'Test one-shot acc:{}'.format(float(acc)/ttt),'\t',acc,ttt,'highest acc:',high_acc
+                        print 'Test one-shot acc_end:{}'.format(float(acc_end)/ttt_end),'\t',acc_end,ttt_end,'highest acc end:',high_acc_end
                     print '\n\n\n'
 
                 global hid
@@ -575,14 +591,15 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-                    acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
-                    if (float(acc_oneshot)/ttt)>high_acc:
-                        high_acc=float(acc_oneshot)/ttt
-                    if (float(acc_oneshot_end)/ttt_end)>high_acc_end:
-                        high_acc_end=float(acc_oneshot_end)/ttt_end
-                    print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
-                    print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
-                    print '\n\n\n'
+                    if repeat_time%10==0:
+                        acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
+                        if (float(acc_oneshot)/ttt)>high_acc:
+                            high_acc=float(acc_oneshot)/ttt
+                        if (float(acc_oneshot_end)/ttt_end)>high_acc_end:
+                            high_acc_end=float(acc_oneshot_end)/ttt_end
+                        print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
+                        print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
+                        print '\n\n\n'
                     if acc>0.90:
                         hid=0
                         prev_weights = lasagne.layers.helper.get_all_param_values(self.nnn)
@@ -597,12 +614,12 @@ class Model:
                 pass
 
 test_mode=0
-if_cont=1
+if_cont=0
 global hid
 hid=0
 lll=170
 global same_batch
-same_batch=64
+same_batch=32
 # same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -610,17 +627,17 @@ if __name__=='__main__':
     if test_mode:
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=50, help='Dimension#')
+        parser.add_argument('--x_dimension', type=tuple, default=(30,30), help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=960, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=480, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
-    parser.add_argument('--max_norm', type=float, default=5, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.5, help='Task#')
-    parser.add_argument('--discount', type=float, default=0.99, help='Task#')
-    parser.add_argument('--std', type=float, default=3, help='Task#')
+    parser.add_argument('--max_norm', type=float, default=50, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
+    parser.add_argument('--discount', type=float, default=0.999, help='Task#')
+    parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='119', help='Task#')
     args=parser.parse_args()
