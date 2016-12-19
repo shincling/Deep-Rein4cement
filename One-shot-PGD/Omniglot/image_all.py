@@ -44,14 +44,14 @@ def shuffle_label(y,counts):
                     break
     return y
 
-def build(path,pathdir,files,labels,labels_eval,all_count,size):
+def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
     train_labels=labels
     test_labels=labels_eval
     assert len(train_labels)+len(test_labels)==all_count
 
     train_dates={label:[] for label in train_labels}
     test_dates={label:[] for label in test_labels}
-    for file in files:
+    for file in (files+files_eval):
         label=file[-11:-7]
         if label in train_labels:
             train_dates[label].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
@@ -74,10 +74,10 @@ pathdir=os.listdir(path)
 files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 
-path='python/backall_all_eval'
-pathdir=os.listdir(path)
-files=[path+'/'+ff for ff in pathdir]
-labels_eval=get_labels(pathdir)
+path_eval='python/backall_eval'
+pathdir_eval=os.listdir(path_eval)
+files_eval=[path_eval+'/'+ff for ff in pathdir_eval]
+labels_eval=get_labels(pathdir_eval)
 
 all_count=len(labels)+len(labels_eval)
 # ratio=0.7
@@ -91,7 +91,7 @@ if cnn_only:
     pass
     # ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
-    x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,labels_eval,all_count,size)
+    x_train,y_train,x_test,y_test=build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size)
     del files
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
