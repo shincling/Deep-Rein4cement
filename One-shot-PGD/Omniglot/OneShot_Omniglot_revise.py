@@ -84,6 +84,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
         # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        # self.ratio=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
         self.zero_vec = np.zeros(embedding_size, dtype=theano.config.floatX)
@@ -97,12 +98,15 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+0.0000001
+        activation2=activation2/norm2
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
-        activation=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
+        activation2=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
+        activation3=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         # if inputs[2] is not None:
         #     final=inputs[2]*final-(1-inputs[2])*1000000
-        alpha=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
+        alpha=lasagne.nonlinearities.softmax(activation2) #(BS,max_sentlen)
         return alpha
 
 class ContChoiceLayer(lasagne.layers.MergeLayer):
@@ -205,7 +209,7 @@ class Model:
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
@@ -570,7 +574,7 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    if repeat_time%5==0:
+                    if repeat_time%2==0:
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
@@ -619,7 +623,7 @@ global hid
 hid=0
 lll=170
 global same_batch
-same_batch=32
+same_batch=48
 # same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -627,7 +631,7 @@ if __name__=='__main__':
     if test_mode:
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--x_dimension', type=tuple, default=(30,30), help='Dimension#')
+        parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=480, help='Task#')
@@ -635,7 +639,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.0005, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
