@@ -449,15 +449,28 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
-        x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
-        yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
-        xx,yy=x_train,yy_train
+
+        '''数据选择'''
+        if 1:
+            '''导入image里面原有的数据'''
+            x_test,y_test=image.x_test,image.y_test
+            yy_test=image.y_test_shuffle
+
+        '''是否读取原来的参数'''
         if 0:
             load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
             lasagne.layers.set_all_param_values(self.network,load_params)
             print 'load succeed!'
         for epoch in range(self.n_epoch):
             begin_time = time.time()
+            if 1:
+                '''从image里面再生成一次数据'''
+                x_train,y_train,_0,_1=image.build(image.path,image.pathdir,image.files,image.labels,image.all_count,image.ratio,image.size)
+                del _0,_1
+                yy_train=image.shuffle_label(y_train.copy(),image.total_labels_per_seq)
+                xx,yy=x_train,yy_train
+                print 'train_labels(first 2):\n',y_train[:2]
+                print 'test_labels(first 2):\n',y_test[:2],'\n\n'
             batch_total_number = len(xx) / batch_size
             '''每一轮的shuffle策略'''
             zipp=zip(xx,yy,y_train)
@@ -637,10 +650,10 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=1920, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=480, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=30, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=5, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.003, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
