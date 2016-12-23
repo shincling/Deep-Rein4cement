@@ -45,15 +45,15 @@ def shuffle_label(y,counts):
     return y
 
 def build(path,pathdir,files,labels,all_count,ratio,size):
-
+    labels_copy=labels[:]
     if not label_fixed:
-        train_labels=random.sample(labels,int(ratio*len(labels)))
+        train_labels=random.sample(labels_copy,int(ratio*len(labels_copy)))
     else:
-        train_labels=labels[:int(ratio*len(labels))]
+        train_labels=labels_copy[:int(ratio*len(labels_copy))]
         print train_labels[:20]
     for i in train_labels:
-        labels.remove(i)
-    test_labels=labels
+        labels_copy.remove(i)
+    test_labels=labels_copy
     assert len(train_labels)+len(test_labels)==all_count
 
     train_dates={label:[] for label in train_labels}
@@ -82,18 +82,19 @@ files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 all_count=len(labels)
 ratio=0.7
-size=(30,30)
+size=(20,20)
 total_labels_per_seq=5
 path_length=11
-total_roads=3200
+total_roads=1000
 cnn_only=0
 label_fixed=1
 if cnn_only:
     ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
-    x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
-    del files
-    y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-    y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+    pass
+    # x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
+    # del files
+    # y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    # y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
