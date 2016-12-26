@@ -216,7 +216,7 @@ class Model:
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         # l_range_dense2_origin1=lasagne.layers.DenseLayer(l_range_dense2,lll,W=D3,b=None,nonlinearity=None)
         # l_range_dense2_origin2=lasagne.layers.ReshapeLayer(l_range_dense2_origin1,[self.batch_size,self.path_length,self.h_dim])
@@ -590,7 +590,9 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    if repeat_time%5==0:
+                    output_label=open('acc_label/label').read()
+                    output_fre=int(open('acc_label/fre').read())
+                    if output_label=='1' and repeat_time%output_fre==0:
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
