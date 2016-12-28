@@ -592,7 +592,11 @@ class Model:
 
                     output_label=open('acc_label/label').read()
                     output_fre=int(open('acc_label/fre').read())
-                    if output_label=='1' and repeat_time%output_fre==0:
+                    try:
+                        fre=repeat_time%output_fre
+                    except:
+                        fre=0
+                    if output_label=='1' and fre==0:
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
