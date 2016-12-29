@@ -91,10 +91,10 @@ label_fixed=1
 if cnn_only:
     ddd=build(path,pathdir,files,labels,all_count,ratio,size)
 else:
-    pass
+    # pass
     x_train,y_train,x_test,y_test=build(path,pathdir,files,labels,all_count,ratio,size)
     # del files
-    # y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
