@@ -83,7 +83,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
         # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
-        # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         # self.ratio=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
@@ -96,8 +96,8 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+0.0000001
         activation2=activation2/norm2
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
@@ -477,7 +477,9 @@ class Model:
                     if pre_finished:
                         lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
                         ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
-                        print "\n".join(ccc)
+                        del ooo
+                        for ooo in ccc:
+                            print ooo,'\n'
                         print 'load succeed!'
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -584,7 +586,7 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    if 0 and repeat_time%5==0:
+                    if 1 and repeat_time%5==0:
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
@@ -605,7 +607,7 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-                    if 0 and repeat_time%5==0:
+                    if 1 and repeat_time%5==0:
                         acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc_oneshot)/ttt)>high_acc:
                             high_acc=float(acc_oneshot)/ttt
@@ -614,7 +616,7 @@ class Model:
                         print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
                         print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
                         print '\n\n\n'
-                    if acc>0.002:
+                    if acc>0.9:
                         hid=0
                         pre_finished=1
                         prev_weights_stable = lasagne.layers.helper.get_all_param_values(self.nnn)
