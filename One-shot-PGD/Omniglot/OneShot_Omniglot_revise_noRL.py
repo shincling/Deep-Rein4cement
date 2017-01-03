@@ -642,11 +642,11 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='119', help='Task#')
+    parser.add_argument('--save_path', type=str, default='19', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args

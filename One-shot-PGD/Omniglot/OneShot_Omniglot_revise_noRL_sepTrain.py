@@ -607,7 +607,7 @@ class Model:
                         acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
                     acc=float(acc)/(batch_size*batch_total_number)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
-                    if 1 and repeat_time%5==0:
+                    if acc>0.5 and repeat_time%5==0:
                         acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc_oneshot)/ttt)>high_acc:
                             high_acc=float(acc_oneshot)/ttt
