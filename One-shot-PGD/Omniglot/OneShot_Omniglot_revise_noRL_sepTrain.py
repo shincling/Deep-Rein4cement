@@ -476,11 +476,11 @@ class Model:
                 for idx_batch in range(batch_total_number):#对于每一个batch
                     if pre_finished:
                         lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
-                        ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
-                        del ooo
-                        for ooo in ccc:
-                            print ooo,'\n'
-                        print 'load succeed!'
+                        # ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
+                        # del ooo
+                        # for ooo in ccc:
+                        #     print ooo,'\n'
+                        print 'load succeed!\n'
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -512,8 +512,6 @@ class Model:
                             xx_batch[(line)*inn:(line+1)*inn]=xxx[rr]
                             yy_batch[(line)*inn:(line+1)*inn]=yyy[rr]
                             yy_batch_vector[(line)*inn:(line+1)*inn]=yyy_vector[rr]
-
-
 
                     xx_batch_0=xx_batch[:,0,:].reshape([xx_batch.shape[0],1,xx_batch.shape[-2],xx_batch.shape[-1]])
                     xx_batch_0_repeat=xx_batch_0.repeat(path_length,axis=1)
@@ -636,8 +634,8 @@ global hid
 hid=1
 lll=170
 global same_batch
-# same_batch=48
-same_batch=0
+same_batch=32
+# same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -647,7 +645,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=48, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=96, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
