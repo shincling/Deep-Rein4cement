@@ -80,6 +80,7 @@ files_eval=[path_eval+'/'+ff for ff in pathdir_eval]
 labels_eval=get_labels(pathdir_eval)
 
 all_count=len(labels)+len(labels_eval)
+print "train:{},test:{}".format(len(labels),len(labels_eval))
 # ratio=0.7
 size=(20,20)
 total_labels_per_seq=5
