@@ -8,7 +8,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image
+import image_all
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
@@ -103,7 +103,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         activation2=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # final=T.dot(activation,self.W_o) #(BS,max_sentlen)
-        activation3=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation3=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         # if inputs[2] is not None:
         #     final=inputs[2]*final-(1-inputs[2])*1000000
         alpha=lasagne.nonlinearities.softmax(activation2) #(BS,max_sentlen)
@@ -449,10 +449,14 @@ class Model:
         h_dim=self.h_dim
         n_classes=self.n_classes
         save_path=self.save_path
-        pre_finished=0
+        if 1:
+            pre_finished=1
+            prev_weights_stable=pickle.load(open('params/params_nnn_0.900347222222_3_12_2017-01-04 12:26:13'))
+        else:
+            pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
-        x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
-        yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
+        x_train,y_train,x_test,y_test=image_all.x_train,image_all.y_train,image_all.x_test,image_all.y_test
+        yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
         if 0:
             load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
@@ -481,6 +485,7 @@ class Model:
                         # for ooo in ccc:
                         #     print ooo,'\n'
                         print 'load succeed!\n'
+                        hid=0
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -491,7 +496,7 @@ class Model:
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     if hid==1:
                         # self.x_range_shared.set_value(xx_batch)
-                        # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
+                        # self.x_range_label.set_value(action_to_vector(y_batch,len(image_all.)))
                         ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll)[:,0])
                         print 'The hidden classification is :',ccc
                         errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
@@ -645,16 +650,16 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=96, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=320, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='19', help='Task#')
+    parser.add_argument('--save_path', type=str, default='sepTrain_choince_wo', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
