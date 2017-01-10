@@ -85,7 +85,7 @@ ratio=0.7
 size=(20,20)
 total_labels_per_seq=5
 path_length=11
-total_roads=3000
+total_roads=5000
 cnn_only=0
 label_fixed=1
 if cnn_only:
