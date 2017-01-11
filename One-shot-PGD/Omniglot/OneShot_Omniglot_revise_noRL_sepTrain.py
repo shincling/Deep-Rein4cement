@@ -451,6 +451,7 @@ class Model:
         h_dim=self.h_dim
         n_classes=self.n_classes
         save_path=self.save_path
+        total_test=1000
         if 1:
             pre_finished=1
             prev_weights_stable=pickle.load(open('params/params_nnn_0.952083333333_1_10_2017-01-09 21:18:32'))
@@ -460,6 +461,7 @@ class Model:
         x_train,y_train,x_test,y_test=image_all.x_train,image_all.y_train,image_all.x_test,image_all.y_test
         yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
+        x_test,y_test,yy_test=x_test[:total_test],y_test[:total_test],yy_test[:total_test]
         if 0:
             load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
             lasagne.layers.set_all_param_values(self.network,load_params)
