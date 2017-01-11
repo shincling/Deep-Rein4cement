@@ -264,6 +264,7 @@ class Model:
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin2, {l_range_in: x_range,l_range_label:x_label})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
+        params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
             x_label:self.x_range_label,
@@ -490,6 +491,7 @@ class Model:
                         # for ooo in ccc:
                         #     print ooo,'\n'
                         print 'load succeed!\n'
+                        pre_finished=0
                         hid=0
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -582,13 +584,15 @@ class Model:
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
-                    print '\niter:',epoch,repeat_time,idx_batch,'\t\tcost:{},average_reward:{},time:{}'.format(cost,aver_reward,time.time())
+                    print 'iter:',epoch,repeat_time,idx_batch,'\t\tcost:{},average_reward:{},time:{}'.format(cost,aver_reward,time.time())
                     print total_state[0][-1][:,-20:]
                     print yy_batch[0]
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
                     print '\n'
+                    for para in lasagne.layers.get_all_param_values(self.network):
+                        print para[0]
                     # print self.ppp.eval()
                     print _[0]
                     # print '\n'
@@ -601,8 +605,8 @@ class Model:
                     except:
                         fre=0
                     if output_label=='1' and fre==0:
-                        if pre_finished:
-                            lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
+                        # if pre_finished:
+                        #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
