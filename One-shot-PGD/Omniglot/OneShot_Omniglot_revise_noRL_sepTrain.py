@@ -345,6 +345,8 @@ class Model:
         return action,new_memory_state,reward,new_memory_label
 
     def test_acc(self,xx,yy):
+        if len(xx)>2000:
+            xx,yy=xx[:2000],yy[:2000]
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
         acc,ttt=0.,0.
