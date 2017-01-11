@@ -8,7 +8,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image
+import image_all
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
@@ -83,7 +83,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
         # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
-        # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         # self.ratio=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
@@ -96,8 +96,8 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         # norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+0.0000001
         # activation2=activation2/norm2
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
@@ -455,8 +455,8 @@ class Model:
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
-        x_train,y_train,x_test,y_test=image.x_train,image.y_train,image.x_test,image.y_test
-        yy_train,yy_test=image.y_train_shuffle,image.y_test_shuffle
+        x_train,y_train,x_test,y_test=image_all.x_train,image_all.y_train,image_all.x_test,image_all.y_test
+        yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
         if 0:
             load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
@@ -496,7 +496,7 @@ class Model:
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     if hid==1:
                         # self.x_range_shared.set_value(xx_batch)
-                        # self.x_range_label.set_value(action_to_vector(y_batch,len(image.)))
+                        # self.x_range_label.set_value(action_to_vector(y_batch,len(image_all.)))
                         ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll)[:,0])
                         print 'The hidden classification is :',ccc
                         errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
@@ -589,7 +589,13 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    if 1 and repeat_time%5==0:
+                    output_label = open('acc_label/label').read()
+                    output_fre = int(open('acc_label/fre').read())
+                    try:
+                        fre=repeat_time%output_fre
+                    except:
+                        fre=0
+                    if output_label=='1' and fre==0:
                         if pre_finished:
                             lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
@@ -618,8 +624,8 @@ class Model:
                             high_acc=float(acc_oneshot)/ttt
                         if (float(acc_oneshot_end)/ttt_end)>high_acc_end:
                             high_acc_end=float(acc_oneshot_end)/ttt_end
-                        print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
-                        print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
+                        print 'Hid Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
+                        print 'Hid Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
                         print '\n\n\n'
                     if acc>0.95:
                         hid=0
@@ -657,7 +663,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.005, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')

@@ -577,7 +577,13 @@ class Model:
                     # print '\n'
                     # print total_probs[0]
 
-                    if repeat_time%1==0:
+                    output_label = open('acc_label/label').read()
+                    output_fre = int(open('acc_label/fre').read())
+                    try:
+                        fre=repeat_time%output_fre
+                    except:
+                        fre=0
+                    if output_label=='1' and fre==0:
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
                         if (float(acc)/ttt)>high_acc:
                             high_acc=float(acc)/ttt
@@ -604,8 +610,8 @@ class Model:
                             high_acc=float(acc_oneshot)/ttt
                         if (float(acc_oneshot_end)/ttt_end)>high_acc_end:
                             high_acc_end=float(acc_oneshot_end)/ttt_end
-                        print 'Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
-                        print 'Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
+                        print 'Hid:Test one-shot acc:{}'.format(float(acc_oneshot)/ttt),'\t',acc_oneshot,ttt,'highest acc_oneshot:',high_acc
+                        print 'Hid:Test one-shot acc_end:{}'.format(float(acc_oneshot_end)/ttt_end),'\t',acc_oneshot_end,ttt_end,'highest acc_oneshot end:',high_acc_end
                         print '\n\n\n'
                     if acc>0.99:
                         hid=0
