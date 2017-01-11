@@ -478,6 +478,7 @@ class Model:
                 #     print "now lr is:",self.lr
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for idx_batch in range(batch_total_number):#对于每一个batch
+                    batch_start_time=time.time()
                     if pre_finished:
                         lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
                         # ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
@@ -577,7 +578,7 @@ class Model:
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
-                    print 'cost:{},average_reward:{}'.format(cost,aver_reward)
+                    print '\niter:',epoch,repeat_time,idx_batch,'\t\tcost:{},average_reward:{},time:{}'.format(cost,aver_reward,time.time())
                     print total_state[0][-1][:,-20:]
                     print yy_batch[0]
                     print total_action[0]
