@@ -584,27 +584,32 @@ class Model:
                     tmp_cost += cost
                     tmp_result += aver_reward
                     tmp_reward += espect_reward
-                    print 'iter:',epoch,repeat_time,idx_batch,'\t\tcost:{},average_reward:{},time:{}'.format(cost,aver_reward,time.time())
+                    print 'iter:',epoch,repeat_time,idx_batch,'\tcost:{},average_reward:{},time:{}'.format(cost,aver_reward,time.time()-batch_start_time),time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                     print total_state[0][-1][:,-20:]
                     print yy_batch[0]
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
-                    print '\n'
-                    for para in lasagne.layers.get_all_param_values(self.network):
-                        print para[0]
+                    # print '\nparams:'
+                    # for para in lasagne.layers.get_all_param_values(self.network):
+                    #     if len(para.shape)==1:
+                    #         print para[0]
+                    #     else:
+                    #         print para[0][0]
                     # print self.ppp.eval()
-                    print _[0]
+                    print '\n',_[0]
                     # print '\n'
                     # print total_probs[0]
 
-                    output_label = open('acc_label/label').read()
-                    output_fre = int(open('acc_label/fre').read())
+                    output_label = open('acc_label/label').read().strip()
+                    output_fre = int(open('acc_label/fre').read().strip())
+                    print 'label:',output_label,'fre:',output_fre
                     try:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
                     if output_label=='1' and fre==0:
+                        # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
                         acc,ttt,acc_end,ttt_end=self.test_acc(x_test,yy_test)
@@ -656,7 +661,7 @@ global hid
 hid=1
 lll=170
 global same_batch
-same_batch=48
+same_batch=32
 # same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -676,7 +681,7 @@ if __name__=='__main__':
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='sepTrain_choince_wo', help='Task#')
+    parser.add_argument('--save_path', type=str, default='sepTrain_choince_wo_only', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
