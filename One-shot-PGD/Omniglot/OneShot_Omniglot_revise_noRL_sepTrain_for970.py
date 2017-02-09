@@ -213,9 +213,14 @@ class Model:
         l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
+        tmp_h_dim=300
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
+        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,tmp_h_dim])
+
         l_range_dense2_origin1=lasagne.layers.DenseLayer(l_range_dense2,lll,W=D3,b=None,nonlinearity=lasagne.nonlinearities.softmax)
         l_range_dense2_origin2=lasagne.layers.ReshapeLayer(l_range_dense2_origin1,[self.batch_size,self.path_length,self.h_dim])
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
@@ -223,7 +228,7 @@ class Model:
             l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
             xx_label=T.matrix()
             l_range_probas=lasagne.layers.SliceLayer(l_range_dense2_origin,0,axis=1)
-            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,self.h_dim])
+            l_range_probas=lasagne.layers.ReshapeLayer(l_range_probas,[self.batch_size,tmp_h_dim])
             # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,self.h_dim])
             l_range_probas=lasagne.layers.DenseLayer(l_range_probas,lll,W=l_range_dense2_origin1.W,b=None,nonlinearity=lasagne.nonlinearities.softmax)
             ppp=lasagne.layers.helper.get_output(l_range_probas,{l_range_in:x_range,l_label:xx_label})
@@ -672,7 +677,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
-    parser.add_argument('--h_dimension', type=int, default=170, help='Dimension#')
+    parser.add_argument('--h_dimension', type=int, default=lll, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=160, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
