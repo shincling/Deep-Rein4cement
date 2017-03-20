@@ -211,22 +211,7 @@ class Model:
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        # # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
-        # l_range_dense2_origin1=lasagne.layers.DenseLayer(l_range_dense2,lll,W=D3,b=None,nonlinearity=lasagne.nonlinearities.softmax)
-        # l_range_dense2_origin2=lasagne.layers.ReshapeLayer(l_range_dense2_origin1,[self.batch_size,self.path_length,self.h_dim])
-        # l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
-        #
         l_range_dense2 = lasagne.layers.DenseLayer(l_pool2,300,W=D1,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # l_dropout3=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,1024,W=D1,nonlinearity=None) #[bs*path_length,dimension]
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
-        # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         tmp_h_dim=300
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
@@ -303,7 +288,7 @@ class Model:
 
         if 0 and hid:
             # load_params = pickle.load(open('params/params_nnn0.701041666667_110_1_64_2016-11-17 15:38:19'))
-            load_params = pickle.load(open('params/params_nnn_0.90125_7_6_2016-12-07 20:17:49'))
+            load_params = pickle.load(open('params/params_nnn_98all'))
             lasagne.layers.set_all_param_values(self.nnn, load_params)
             print 'load succeed!'
             global hid
@@ -543,7 +528,7 @@ class Model:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
-                    if output_label=='1' and fre==0:
+                    if 1 or output_label=='1' and fre==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -649,12 +634,12 @@ class Model:
                     print total_action[0]
                     print total_memory_label[0][-1]
                     print total_reward[0]
-                    # print '\nparams:'
-                    # for para in lasagne.layers.get_all_param_values(self.network):
-                    #     if len(para.shape)==1:
-                    #         print para[0]
-                    #     else:
-                    #         print para[0][0]
+                    print '\nparams:'
+                    for para in lasagne.layers.get_all_param_values(self.network):
+                        if len(para.shape)==1:
+                            print para[0]
+                        else:
+                            print para[0][0]
                     # print self.ppp.eval()
                     print '\n',_[0]
                     # print '\n'
@@ -667,7 +652,7 @@ class Model:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
-                    if 1 or output_label=='1' and fre==0:
+                    if 1 and output_label=='1' and fre==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -736,11 +721,11 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.2, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.03, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='sepTrain_choince_wo_only', help='Task#')
+    parser.add_argument('--save_path', type=str, default='970_testall', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
