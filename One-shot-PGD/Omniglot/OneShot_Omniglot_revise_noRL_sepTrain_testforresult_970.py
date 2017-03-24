@@ -261,15 +261,15 @@ class Model:
             if if_cont==1:
                 l_range_status=ContChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,self.h_dim-self.n_classes,self.n_classes,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             else:
-                l_range_status=ChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
+                l_range_status=finalChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_status,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range,l_range_label:x_label})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
-        # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
-        params=[]#相当于只更新最后一个参数，别的不参与更新了
+        params=params[-3:]#相当于只更新最后一个参数，别的不参与更新了
+        # params=[]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
             x_label:self.x_range_label,
@@ -528,7 +528,7 @@ class Model:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
-                    if 1 or output_label=='1' and fre==0:
+                    if 0 and output_label=='1' and fre==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -717,13 +717,13 @@ if __name__=='__main__':
     parser.add_argument('--h_dimension', type=int, default=300, help='Dimension#')
     parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
-    parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.03, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0001, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
-    parser.add_argument('--std', type=float, default=0.1, help='Task#')
+    parser.add_argument('--std', type=float, default=0.5, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
     parser.add_argument('--save_path', type=str, default='970_testall', help='Task#')
     args=parser.parse_args()

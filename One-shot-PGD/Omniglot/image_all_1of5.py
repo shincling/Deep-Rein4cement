@@ -86,10 +86,10 @@ print "train:{},test:{}".format(len(labels),len(labels_eval))
 size=(20,20)
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
-total_roads=100
+total_roads=300
 cnn_only=0
 label_fixed=1
-number_shots_total=1#这个量用来约束到底是几shot
+number_shots_total=5#这个量用来约束到底是几shot
 if cnn_only:
     pass
     # ddd=build(path,pathdir,files,labels,all_count,ratio,size)
