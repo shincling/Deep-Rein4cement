@@ -241,7 +241,7 @@ class Model:
 
         if hid==1:
             # TODO:这里改成一起学的，不用slice的最好
-            slice_label=0
+            global slice_label
             if slice_label:
                 l_label = lasagne.layers.InputLayer(shape=(self.batch_size,lll))
                 xx_label=T.matrix()
@@ -578,12 +578,15 @@ class Model:
 
 
 
-                    global hid
+                    global hid,slice_label
                     y_batch = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     if hid==1:
                         # self.x_range_shared.set_value(xx_batch)
                         # self.x_range_label.set_value(action_to_vector(y_batch,len(image_all.)))
-                        ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll).reshape([-1,lll]))
+                        if slice_label:
+                            ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll)[:,0])
+                        else:
+                            ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll).reshape([-1,lll]))
                         print 'The hidden classification is :',ccc
                         errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
                         acc=float(errors)/len(y_batch)
@@ -736,8 +739,9 @@ class Model:
 
 test_mode=0
 if_cont=0
-global hid
+global hid,slice_label
 hid=1
+slice_label=0
 lll=970
 global same_batch
 # same_batch=32
