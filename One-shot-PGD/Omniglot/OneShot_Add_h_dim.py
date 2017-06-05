@@ -535,6 +535,7 @@ class Model:
             y_train=np.array([one[2] for one in zipp])
 
             for repeat_time in range(n_paths):  # 每一个batch都要经过多次重复采样获取不同的道路
+                print 'New path.\n'
                 # if self.lr<0.01:
                 #     self.lr*=1.05
                 #     print "now lr is:",self.lr
@@ -719,10 +720,13 @@ class Model:
                         pred =self.hid_out(xxx)
                         if slice_label:
                             acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
-                            acc=float(acc)/(batch_size*batch_total_number)
                         else:
                             acc += np.count_nonzero(np.int32(pred ==yyy.reshape(-1)))
-                            acc=float(acc)/(batch_size*batch_total_number*path_length)
+                    if slice_label:
+                        acc=float(acc)/(batch_size*batch_total_number)
+                    else:
+                        acc=float(acc)/(batch_size*batch_total_number*path_length)
+
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
                     if acc>0.5 and repeat_time%5==0:
                         acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
@@ -769,7 +773,7 @@ if __name__=='__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=30, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=3, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.2, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
