@@ -585,14 +585,20 @@ class Model:
                         # self.x_range_label.set_value(action_to_vector(y_batch,len(image_all.)))
                         if slice_label:
                             ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll)[:,0])
+                            print 'The hidden classification cost is :',ccc
+                            errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
+                            acc=float(errors)/len(y_batch)
+                            print pred[0:100]
+                            print y_batch[:,0][0:100]
+                            print 'right rate:',acc
                         else:
                             ccc,pred,ppp=self.hid(xx_batch,action_to_vector_real(y_batch,lll).reshape([-1,lll]))
-                        print 'The hidden classification is :',ccc
-                        errors=np.count_nonzero(np.int32(pred==y_batch[:,0]))
-                        acc=float(errors)/len(y_batch)
-                        print pred[0:100]
-                        print y_batch[:,0][0:100]
-                        print 'right rate:',acc
+                            print 'The hidden classification cost is :',ccc
+                            errors=np.count_nonzero(np.int32(pred==y_batch.reshape(-1)))
+                            acc=float(errors)/len(pred)
+                            print pred[0:30]
+                            print y_batch.reshape(-1)[0:30]
+                            print 'right rate:',acc
                         continue
 
                     global same_batch
@@ -711,8 +717,12 @@ class Model:
                         xxx = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                         yyy = np.int32(y_train)[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                         pred =self.hid_out(xxx)
-                        acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
-                    acc=float(acc)/(batch_size*batch_total_number)
+                        if slice_label:
+                            acc += np.count_nonzero(np.int32(pred ==yyy[:,0]))
+                            acc=float(acc)/(batch_size*batch_total_number)
+                        else:
+                            acc += np.count_nonzero(np.int32(pred ==yyy.reshape(-1)))
+                            acc=float(acc)/(batch_size*batch_total_number*path_length)
                     print 'iter:', epoch,repeat_time, '|Acc:',acc,'\n\n'
                     if acc>0.5 and repeat_time%5==0:
                         acc_oneshot,ttt,acc_oneshot_end,ttt_end=self.test_acc(x_test,yy_test)
