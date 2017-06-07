@@ -197,8 +197,8 @@ class Model:
         self.x_range_memory=theano.shared(np.zeros((self.batch_size,self.path_length,self.n_classes,self.h_dim),dtype=theano.config.floatX),borrow=True)
 
         '''前期的框架模型，主要是得到x到h的映射，以及memory的构建'''
-        # D1, D2, D3 = lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0)
-        D1, D2, D3 = lasagne.init.Uniform(-2,2), lasagne.init.Uniform(-2,2), lasagne.init.Uniform(-2,2)
+        D1, D2, D3 = lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0), lasagne.init.Normal(std=self.std,mean=0)
+        # D1, D2, D3 = lasagne.init.Uniform(-1,1), lasagne.init.Uniform(-1,1), lasagne.init.Uniform(-1,1)
 
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.x_dim[0],self.x_dim[1]])
@@ -255,6 +255,7 @@ class Model:
                 pred = T.argmax(ppp, axis=1)
                 hidden_grads=T.grad(hidden_cost,hidden_params)
                 hidden_updates =lasagne.updates.nesterov_momentum(hidden_cost, hidden_params, learning_rate=0.01)
+                hidden_updates =lasagne.updates.sgd(hidden_cost, hidden_params, learning_rate=0.005)
                 self.hid = theano.function([x_range,xx_label],[hidden_cost,pred,ppp],updates=hidden_updates,on_unused_input='ignore',allow_input_downcast=True)
                 self.hid_out= theano.function([x_range],[pred],on_unused_input='ignore',allow_input_downcast=True)
                 self.nnn=l_range_probas
@@ -510,9 +511,10 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
-        if 0:
+        if 1:
             pre_finished=1
-            prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
+            # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
+            prev_weights_stable=pickle.load(open('params/params_nnn_0.95_re'))
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
@@ -755,7 +757,7 @@ test_mode=0
 if_cont=0
 global hid,slice_label
 hid=1
-slice_label=0
+slice_label=1
 lll=970
 global same_batch
 # same_batch=32
@@ -773,13 +775,13 @@ if __name__=='__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=3, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.2, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='sepTrain_choince_wo_only_restart', help='Task#')
+    parser.add_argument('--save_path', type=str, default='re_sepTrain', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
