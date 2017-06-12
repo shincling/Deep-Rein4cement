@@ -3,6 +3,7 @@ import gzip
 import pickle
 import numpy as np
 import random
+import time
 
 import theano
 from theano import tensor as T
@@ -13,15 +14,17 @@ from lasagne.updates import nesterov_momentum
 from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image_all_rotate as image
+from tqdm import tqdm
 
-BATCHSIZE = 32
+BATCHSIZE = 64
 PIXELS = 20
 imageSize = PIXELS * PIXELS
 num_features = imageSize
 num_labels=4*964
-num_images=964*4*20 #共77120个图，算上了旋转的
+num_images=964*4*15#共77120个图，算上了旋转的
+# num_images=964 #共77120个图，算上了旋转的
 h_dimension=300
-valid_size=10000
+valid_size=100
 size=num_images-valid_size
 
 # set up functions needed to train the network
@@ -29,7 +32,7 @@ def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
 
 def lasagne_model():
-    l_in = InputLayer(shape=(None, 1, 30, 30))
+    l_in = InputLayer(shape=(None, 1, 20, 20))
 
     # l_in =lasagne.layers.NonlinearityLayer(l_in,lasagne.nonlinearities.tanh)
     l_conv1 = Conv2DLayer(l_in, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
@@ -59,19 +62,30 @@ def main():
     labels=data.keys()
     train_X=np.zeros([num_images,1,PIXELS,PIXELS])
     train_y=np.zeros([num_images,len(labels)])
-    for i in range(num_images):
-        for label in (data.keys()):
-            for im in data[label]:
-                train_X[i,0]=im
-                train_y[i]=label_binarize([label],labels)[0]
+    i=0
+    for label in (data.keys()):
+        for im in data[label]:
+            train_X[i,0]=im
+            train_y[i]=label_binarize([label],labels)[0]
+            i+=1
+            if i>=num_images:
+                break
+            if i%500==0:
+                print 'idx of images:',i
+        if i>=num_images:
+            break
     zipp=zip(train_X,train_y)
     random.shuffle(zipp)
     xx=np.array([one[0] for one in zipp])
     yy=np.array([one[1] for one in zipp])
+    del train_X,train_y
     train_X=xx[:size]
     train_y=yy[:size]
     valid_X=xx[size:]
     valid_y=yy[size:]
+    del xx,yy
+    print 'Shuffle finish. Begin to build model.'
+
     X = T.tensor4()
     Y = T.matrix()
 
@@ -103,7 +117,7 @@ def main():
     valid_eval = []
     valid_acc = []
 
-    for i in range(45000):
+    for i in range(450):
         batch_total_number = len(train_X) / BATCHSIZE
         for idx_batch in range (batch_total_number):
             xx_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
@@ -113,16 +127,18 @@ def main():
             print i,idx_batch,'| Tloss:', train_loss,'| Count:',np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
             print pred
             print np.argmax(yy_batch,axis=1)
+            print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-        if idx_batch%5==0:
-            acc=0
-            for j in range(batch_total_number):
-                x_batch = np.float32(valid_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
-                y_batch = np.float32(valid_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
-                pred = predict_valid(x_batch)
-                acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
-            acc=float(acc)/(BATCHSIZE*batch_total_number)
-            print 'iter:', i,idx_batch, '| Tloss:', train_loss,'|Acc:',acc
+            if idx_batch%5==0:
+                acc=0
+                for j in range(batch_total_number):
+                    x_batch = np.float32(valid_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
+                    y_batch = np.float32(valid_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
+                    valid_loss =valid(x_batch,y_batch)
+                    pred = predict_valid(x_batch)
+                    acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
+                acc=float(acc)/(BATCHSIZE*batch_total_number)
+                print 'iter:', i,idx_batch, '| Vloss:',valid_loss,'|Acc:',acc
 
 
     # save weights
