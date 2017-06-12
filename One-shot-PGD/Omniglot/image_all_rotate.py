@@ -3,7 +3,8 @@ import os
 import numpy as np
 import random
 import scipy.misc
-from scipy.misc import imread,imresize,imsave,imshow
+from scipy.misc import imread,imresize,imsave,imshow,imrotate
+import Image
 # from scipy.ndimage import rotate,shift
 
 def get_labels(dir):
@@ -30,7 +31,7 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
             if i!=insert_idx:
                 label=np.random.choice(label_list[:-1])
                 final_y[one_sample,i]=int(label)
-                final_x[one_sample,i,:]=random.sample(data[label],1)[0]
+                final_x[one_sample,i,:]=random.sample(data[int(label)],1)[0]
     return final_x,final_y
 
 def shuffle_label(y,counts):
@@ -54,9 +55,9 @@ def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
     for file in (files+files_eval):
         label=file[-11:-7]
         if label in train_labels:
-            train_dates[label].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
+            train_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
         else:
-            test_dates[label].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
+            test_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
 
     train_rank_dates={}
     for i in range(len(train_dates)):
@@ -68,6 +69,33 @@ def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
     # x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
     x_test,y_test=get_sequence_images(test_dates,test_labels,path_length,total_labels_per_seq,size,total_roads)
     return x_train,y_train,x_test,y_test
+
+def build_rotations(path,pathdir,files,labels,all_count,size):
+    train_labels=labels
+    barr=len(labels)
+
+    # train_dates={label:[] for label in train_labels}
+    train_dates={}
+    for label in train_labels:
+        '''每一个label都扩充成4倍，
+        原来的原来的是原来的label，
+        下一轮是rotate 90的，再下一轮是180的，最后一伦施270的'''
+        train_dates[int(label)]=[]
+        train_dates[int(label)+barr]=[]
+        train_dates[int(label)+2*barr]=[]
+        train_dates[int(label)+3*barr]=[]
+
+    for file in files:
+        label=file[-11:-7]
+        if label in train_labels:
+            train_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
+            train_dates[int(label)+barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),90),size)))))
+            train_dates[int(label)+2*barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),180),size)))))
+            train_dates[int(label)+3*barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),270),size)))))
+
+    if cnn_only:
+        return train_dates
+
 
 path='python/backall_all'
 pathdir=os.listdir(path)
@@ -81,16 +109,20 @@ labels_eval=get_labels(pathdir_eval)
 
 all_count=len(labels)+len(labels_eval)
 print "train:{},test:{}".format(len(labels),len(labels_eval))
+print "labels_train：",labels
 # ratio=0.7
 size=(20,20)
 total_labels_per_seq=5
 path_length=11
 total_roads=2000
-cnn_only=0
+cnn_only=1
 label_fixed=1
 if cnn_only:
-    pass
-    # ddd=build(path,pathdir,files,labels,all_count,ratio,size)
+    ddd=build_rotations(path,pathdir,files,labels,all_count,size)
+    num_images=0
+    for key in ddd:
+        for j in key:
+            num_images+=1
 else:
     x_train,y_train,x_test,y_test=build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size)
     del files,files_eval
