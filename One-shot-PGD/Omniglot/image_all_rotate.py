@@ -100,6 +100,7 @@ def build_rotations(path,pathdir,files,labels,all_count,size):
 path='python/backall_all'
 pathdir=os.listdir(path)
 files=[path+'/'+ff for ff in pathdir]
+print 'files for train:',len(files)
 labels=get_labels(pathdir)
 
 path_eval='python/backall_eval'
@@ -109,7 +110,7 @@ labels_eval=get_labels(pathdir_eval)
 
 all_count=len(labels)+len(labels_eval)
 print "train:{},test:{}".format(len(labels),len(labels_eval))
-print "labels_train：",labels
+# print "labels_train：",labels
 # ratio=0.7
 size=(20,20)
 total_labels_per_seq=5
@@ -120,9 +121,10 @@ label_fixed=1
 if cnn_only:
     ddd=build_rotations(path,pathdir,files,labels,all_count,size)
     num_images=0
-    for key in ddd:
-        for j in key:
-            num_images+=1
+    # for key in ddd:
+    #     for j in ddd[key]:
+    #         num_images+=1
+    # print num_images
 else:
     x_train,y_train,x_test,y_test=build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size)
     del files,files_eval

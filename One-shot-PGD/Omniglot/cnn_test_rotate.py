@@ -12,14 +12,17 @@ from lasagne.nonlinearities import rectify, softmax, very_leaky_rectify
 from lasagne.updates import nesterov_momentum
 from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image
+import image_all_rotate as image
 
 BATCHSIZE = 32
 PIXELS = 20
 imageSize = PIXELS * PIXELS
 num_features = imageSize
-size=1000
 num_labels=4*964
+num_images=964*4*20 #共77120个图，算上了旋转的
+h_dimension=300
+valid_size=10000
+size=num_images-valid_size
 
 # set up functions needed to train the network
 def floatX(X):
@@ -39,10 +42,10 @@ def lasagne_model():
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
     # l_dropout2 = DropoutLayer(l_pool2, p=0.2)
 
-    l_hidden3 = DenseLayer(l_pool2, num_units = 1024, nonlinearity=rectify)
+    l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=rectify)
     # l_dropout3 = DropoutLayer(l_hidden3, p=0.5)
 
-    l_hidden4 = DenseLayer(l_hidden3, num_units = 1024, nonlinearity=rectify)
+    l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=rectify)
     # l_dropout4 = DropoutLayer(l_hidden4, p=0.5)
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels, nonlinearity=softmax)
@@ -53,14 +56,22 @@ def main():
     # load the training and validation data sets
     # labels=int(0.7*image.all_count)
     data=image.ddd
-    labels=len(data)
-    train_X=np.zeros([size,1,PIXELS,PIXELS])
-    train_y=np.zeros([size,labels])
-    for i in range(size):
-        label=random.sample(range(labels),1)[0]
-        train_X[i,0]=random.sample(data[label],1)[0]
-        train_y[i]=label_binarize([label],range(labels))[0]
-
+    labels=data.keys()
+    train_X=np.zeros([num_images,1,PIXELS,PIXELS])
+    train_y=np.zeros([num_images,len(labels)])
+    for i in range(num_images):
+        for label in (data.keys()):
+            for im in data[label]:
+                train_X[i,0]=im
+                train_y[i]=label_binarize([label],labels)[0]
+    zipp=zip(train_X,train_y)
+    random.shuffle(zipp)
+    xx=np.array([one[0] for one in zipp])
+    yy=np.array([one[1] for one in zipp])
+    train_X=xx[:size]
+    train_y=yy[:size]
+    valid_X=xx[size:]
+    valid_y=yy[size:]
     X = T.tensor4()
     Y = T.matrix()
 
@@ -92,7 +103,7 @@ def main():
     valid_eval = []
     valid_acc = []
 
-    for i in range(450):
+    for i in range(45000):
         batch_total_number = len(train_X) / BATCHSIZE
         for idx_batch in range (batch_total_number):
             xx_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
@@ -103,19 +114,20 @@ def main():
             print pred
             print np.argmax(yy_batch,axis=1)
 
-        acc=0
-        for j in range(batch_total_number):
-            x_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
-            y_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
-            pred = predict_valid(x_batch)
-            acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
-        acc=float(acc)/(BATCHSIZE*batch_total_number)
-        print 'iter:', i,idx_batch, '| Tloss:', train_loss,'|Acc:',acc
+        if idx_batch%5==0:
+            acc=0
+            for j in range(batch_total_number):
+                x_batch = np.float32(valid_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
+                y_batch = np.float32(valid_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
+                pred = predict_valid(x_batch)
+                acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
+            acc=float(acc)/(BATCHSIZE*batch_total_number)
+            print 'iter:', i,idx_batch, '| Tloss:', train_loss,'|Acc:',acc
 
 
     # save weights
     all_params = helper.get_all_param_values(output_layer)
-    f = gzip.open('params/weights.pklz', 'wb')
+    f = gzip.open('params/weights_cnn_only_rotate.pklz', 'wb')
     pickle.dump(all_params, f)
     f.close()
 
