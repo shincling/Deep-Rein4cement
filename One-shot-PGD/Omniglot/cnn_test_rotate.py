@@ -16,7 +16,7 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image_all_rotate as image
 from tqdm import tqdm
 
-BATCHSIZE = 64
+BATCHSIZE = 128
 PIXELS = 20
 imageSize = PIXELS * PIXELS
 num_features = imageSize
@@ -24,7 +24,7 @@ num_labels=4*964
 num_images=964*4*15#共77120个图，算上了旋转的
 # num_images=964 #共77120个图，算上了旋转的
 h_dimension=300
-valid_size=100
+valid_size=1280*5
 size=num_images-valid_size
 
 # set up functions needed to train the network
@@ -108,9 +108,9 @@ def main():
     # updates =lasagne.updates.adagrad(loss_train, params, learning_rate=0.003)
 
     # set up training and prediction functions
-    train = theano.function(inputs=[X, Y], outputs=[loss_train,pred_valid], updates=updates, allow_input_downcast=True)
-    valid = theano.function(inputs=[X, Y], outputs=loss_valid, allow_input_downcast=True)
-    predict_valid = theano.function(inputs=[X], outputs=pred_valid, allow_input_downcast=True)
+    train = theano.function(inputs=[X, Y], outputs=[loss_train,pred], updates=updates, allow_input_downcast=True)
+    valid = theano.function(inputs=[X, Y], outputs=[loss_valid], allow_input_downcast=True)
+    predict_valid = theano.function(inputs=[X], outputs=[pred_valid], allow_input_downcast=True)
 
     # loop over training functions for however many iterations, print information while training
     train_eval = []
@@ -124,28 +124,31 @@ def main():
             yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
                
             train_loss ,pred = train(xx_batch,yy_batch)
-            print i,idx_batch,'| Tloss:', train_loss,'| Count:',np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
+            count=np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
+            print i,idx_batch,'| Tloss:', train_loss,'| Count:',count,'| Acc:',float(count)/(BATCHSIZE)
             print pred
             print np.argmax(yy_batch,axis=1)
             print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            if idx_batch%5==0:
+            if 0 and idx_batch%1==0:
                 acc=0
-                for j in range(batch_total_number):
+                valid_batch_number=len(valid_X)/BATCHSIZE
+                for j in tqdm(range(valid_batch_number)):
                     x_batch = np.float32(valid_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
                     y_batch = np.float32(valid_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
-                    valid_loss =valid(x_batch,y_batch)
-                    pred = predict_valid(x_batch)
+                    valid_loss = valid(x_batch,y_batch)[0]
+                    pred = predict_valid(x_batch)[0]
                     acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
-                acc=float(acc)/(BATCHSIZE*batch_total_number)
+                acc=float(acc)/(valid_batch_number*BATCHSIZE)
                 print 'iter:', i,idx_batch, '| Vloss:',valid_loss,'|Acc:',acc
 
 
-    # save weights
-    all_params = helper.get_all_param_values(output_layer)
-    f = gzip.open('params/weights_cnn_only_rotate.pklz', 'wb')
-    pickle.dump(all_params, f)
-    f.close()
+        # save weights
+        if i%5:
+            all_params = helper.get_all_param_values(output_layer)
+            f = gzip.open('params/weights_cnn_only_rotate_{}.pklz'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            pickle.dump(all_params, f)
+            f.close()
 
 if __name__ == '__main__':
     main()
