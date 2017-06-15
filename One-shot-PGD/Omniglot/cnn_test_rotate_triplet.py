@@ -72,12 +72,11 @@ def main():
 
     # set up theano functions to generate output by feeding data through network
     output_layer_softmax , output_layer_triplet= lasagne_model()
-    output_train = lasagne.layers.get_output(output_layer_triplet, X)
-    output_shape = output_train.shape
-    output_train = lasagne.layers.reshape(output_train,(output_train[0]/3,3,output_shape[-1]))
-    output_0= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,0,1))
-    output_1= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,1,1))
-    output_2= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,2,1))
+    output_train = lasagne.layers.ReshapeLayer(output_layer_triplet,(-1,3,[1]))
+    output_0= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,0,1),X)
+    output_1= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,1,1),X)
+    output_2= lasagne.layers.helper.get_output(lasagne.layers.SliceLayer(output_train,2,1),X)
+    output= lasagne.layers.helper.get_output(output_layer_softmax,X)
 
     # set up the loss that we aim to minimize
     dis_pos=T.sqrt((T.sum(T.square(T.sub(output_0,output_1)),1)))
@@ -86,7 +85,7 @@ def main():
     loss_train = T.mean((dis)*(dis>0))
 
     # prediction functions for classifications
-    pred = T.argmax(output_train, axis=1)
+    pred = T.argmax(output, axis=1)
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer_triplet)
@@ -97,7 +96,7 @@ def main():
     train = theano.function(inputs=[X ], outputs=[loss_train,pred], updates=updates, allow_input_downcast=True)
 
     if load_params:
-        pre_params=pickle.load(gzip(open(load_params)))
+        pre_params=pickle.load(gzip.open(load_params))
         lasagne.layers.set_all_param_values(output_layer_softmax,pre_params)
 
     for i in range(450):
@@ -117,8 +116,9 @@ def main():
                 train_X[iii,1]=im_pos
                 train_X[iii,2]=im_neg
 
-
-            xx_batch = np.float32(train_X[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
+            train_X=train_X.reshape(BATCHSIZE*3,1,PIXELS,PIXELS)
+            xx_batch = np.float32(train_X)
+            print xx_batch.shape
             # yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
 
             train_loss ,pred = train(xx_batch)
@@ -131,9 +131,9 @@ def main():
 
 
         # save weights
-        if i%5:
+        if i%2==0:
             all_params = helper.get_all_param_values(output_layer_softmax)
-            f = gzip.open('params/weights_cnn_only_rotate_{}.pklz'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('params/weights_cnn_rotate_triplet_{}.pklz'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
