@@ -23,13 +23,14 @@ num_features = imageSize
 num_labels=4*964
 num_images=964*4*15#共77120个图，算上了旋转的
 num_triples=10000
-num_batches=1000#一个epoch里需要循环多少个不同的batch
+num_batches=100#一个epoch里需要循环多少个不同的batch
 # num_images=964 #共77120个图，算上了旋转的
 h_dimension=300
 valid_size=1280*5
 size=num_images-valid_size
-alpha=0.05
+alpha=1
 load_params='params/params_rotate_95.pklz'
+# load_params=0
 
 
 # set up functions needed to train the network
@@ -79,30 +80,39 @@ def main():
     output= lasagne.layers.helper.get_output(output_layer_softmax,X)
 
     # set up the loss that we aim to minimize
-    dis_pos=T.sqrt((T.sum(T.square(T.sub(output_0,output_1)),1)))
-    dis_neg=T.sqrt((T.sum(T.square(T.sub(output_0,output_2)),1)))
+    eps=1e-10
+    dis_pos=T.sqrt(T.sum(T.square(T.sub(output_0,output_1)),1)+eps)
+    dis_neg=T.sqrt(T.sum(T.square(T.sub(output_0,output_2)),1)+eps)
     dis=(dis_pos-dis_neg+alpha)
+    # dis=(dis_pos-dis_neg)
     loss_train = T.mean((dis)*(dis>0))
+    # loss_train = T.sum(T.nnet.relu(dis))
+    # loss_train = T.mean(dis)
 
     # prediction functions for classifications
     pred = T.argmax(output, axis=1)
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer_triplet)
-    updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
-    # updates =lasagne.updates.adagrad(loss_train, params, learning_rate=0.003)
+    params = params[-1:]
+    grad=T.grad(loss_train,params)
+
+    # updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
+    updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
+    # updates =lasagne.updates.get_or_compute_grads(loss_train, params)
 
     # set up training and prediction functions
-    train = theano.function(inputs=[X ], outputs=[loss_train,pred], updates=updates, allow_input_downcast=True)
+    train = theano.function(inputs=[X], outputs=[loss_train,pred,dis,dis_pos,dis_neg], updates=updates, allow_input_downcast=True)
 
     if load_params:
         pre_params=pickle.load(gzip.open(load_params))
         lasagne.layers.set_all_param_values(output_layer_softmax,pre_params)
+        print 'load Success.'
 
-    for i in range(450):
+    for i in range(4500):
+        aver_loss=0
         for idx_batch in range (num_batches):
             train_X=np.zeros([BATCHSIZE,3,PIXELS,PIXELS])
-            i=0
             for iii in range(BATCHSIZE):
                 label=random.choice(labels)
                 im_aim=random.choice(data[label])
@@ -121,9 +131,10 @@ def main():
             print xx_batch.shape
             # yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
 
-            train_loss ,pred = train(xx_batch)
+            train_loss ,pred ,dis ,dis1,dis2= train(xx_batch)
+            aver_loss+=train_loss
             # count=np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
-            print i,idx_batch,'| Tloss:', train_loss
+            print i,idx_batch,'| Tloss:', train_loss,pred,'\ndis_pos:{}\ndis_neg:{}\ndis:{}'.format(dis1[:20],dis2[:20],dis[:20])
             # print pred
             # print np.argmax(yy_batch,axis=1)
             print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -131,9 +142,10 @@ def main():
 
 
         # save weights
-        if i%2==0:
+        if i%4==0:
+            aver_loss=aver_loss/num_batches
             all_params = helper.get_all_param_values(output_layer_softmax)
-            f = gzip.open('params/weights_cnn_rotate_triplet_{}.pklz'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('params/weights_{}_cnn_rotate_{}_triplet_{}.pklz'.format(aver_loss,alpha,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
