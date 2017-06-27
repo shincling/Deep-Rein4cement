@@ -99,8 +99,22 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        # norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+0.0000001
+
+        #正常的点积的方法
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+
+        #正常的点积的方法
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # norm1=T.sqrt(T.sum(T.square(inputs[0]),axis=2))+1e-15
+        # norm2=T.sqrt(T.sum(T.square(inputs[1]),axis=2))
+        # activation2=activation2/(norm1+norm2)
+
+        # 采用欧式距离的相反数的评价的话：
+        activation2=-T.sqrt(T.sum(T.square(T.sub(inputs[0],inputs[1].repeat(self.max_sentlen,1))),axis=2))
+
+
+
+        # norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+1e-15
         # activation2=activation2/norm2
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
         # activation2=(activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
@@ -517,7 +531,8 @@ class Model:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.95_re'))
-            prev_weights_stable=pickle.load(gzip.open('params/params_rotate_95.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/params_rotate_95.pklz'))
+            prev_weights_stable=pickle.load(gzip.open('params/params_rotate_triplet.pklz'))
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
