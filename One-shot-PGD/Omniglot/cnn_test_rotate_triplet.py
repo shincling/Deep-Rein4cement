@@ -23,12 +23,12 @@ num_features = imageSize
 num_labels=4*964
 num_images=964*4*15#共77120个图，算上了旋转的
 num_triples=10000
-num_batches=100#一个epoch里需要循环多少个不同的batch
+num_batches=1000#一个epoch里需要循环多少个不同的batch
 # num_images=964 #共77120个图，算上了旋转的
 h_dimension=300
 valid_size=1280*5
 size=num_images-valid_size
-alpha=1
+alpha=5
 load_params='params/params_rotate_95.pklz'
 # load_params=0
 
@@ -98,7 +98,7 @@ def main():
     grad=T.grad(loss_train,params)
 
     # updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
-    updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
+    updates =lasagne.updates.rmsprop(loss_train, params, learning_rate=0.003)
     # updates =lasagne.updates.get_or_compute_grads(loss_train, params)
 
     # set up training and prediction functions
@@ -128,16 +128,17 @@ def main():
 
             train_X=train_X.reshape(BATCHSIZE*3,1,PIXELS,PIXELS)
             xx_batch = np.float32(train_X)
-            print xx_batch.shape
+            # print xx_batch.shape
             # yy_batch = np.float32(train_y[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE])
 
             train_loss ,pred ,dis ,dis1,dis2= train(xx_batch)
             aver_loss+=train_loss
             # count=np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
-            print i,idx_batch,'| Tloss:', train_loss,pred,'\ndis_pos:{}\ndis_neg:{}\ndis:{}'.format(dis1[:20],dis2[:20],dis[:20])
-            # print pred
-            # print np.argmax(yy_batch,axis=1)
-            print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            if idx_batch%15==0:
+                print i,idx_batch,'| Tloss:', train_loss,pred,'\ndis_pos:{}\ndis_neg:{}\ndis:{}'.format(dis1[:20],dis2[:20],dis[:20])
+                # print pred
+                # print np.argmax(yy_batch,axis=1)
+                print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 
 
@@ -145,7 +146,7 @@ def main():
         if i%4==0:
             aver_loss=aver_loss/num_batches
             all_params = helper.get_all_param_values(output_layer_softmax)
-            f = gzip.open('params/weights_{}_cnn_rotate_{}_triplet_{}.pklz'.format(aver_loss,alpha,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('params/cnn_triplet/weights_{}_cnn_rotate_{}_triplet_{}.pklz'.format(aver_loss,alpha,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
