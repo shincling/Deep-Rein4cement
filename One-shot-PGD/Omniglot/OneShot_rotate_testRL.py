@@ -321,6 +321,7 @@ class Model:
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
+        print params
         params=params[-3:]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
@@ -528,7 +529,7 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
-        if 1:
+        if 0:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.95_re'))
@@ -541,8 +542,9 @@ class Model:
         yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
         x_test,y_test,yy_test=x_test[:total_test],y_test[:total_test],yy_test[:total_test]
-        if 0:
-            load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
+        if 1:
+            # load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
+            load_params=pickle.load(open('params/params_triplet_3wo'))
             lasagne.layers.set_all_param_values(self.network,load_params)
             print 'load succeed!'
         for epoch in range(self.n_epoch):
@@ -776,7 +778,7 @@ class Model:
 test_mode=0
 if_cont=0
 global hid,slice_label
-hid=1
+hid=0
 slice_label=1
 lll=964*4
 global same_batch
@@ -795,9 +797,9 @@ if __name__=='__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
-    parser.add_argument('--n_paths', type=int, default=30, help='Task#')
+    parser.add_argument('--n_paths', type=int, default=5, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.00005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
