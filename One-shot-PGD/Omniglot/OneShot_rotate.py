@@ -584,7 +584,7 @@ class Model:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
-                    if 1 or output_label=='1' and fre==0:
+                    if 0 and output_label=='1' and fre==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -718,7 +718,7 @@ class Model:
                     except:
                         fre=0
                     # if 1 or output_label=='1' and fre==0:
-                    if output_label=='1' and fre==0:
+                    if output_label=='1' and fre==0 and idx_batch==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -796,7 +796,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.00002, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
