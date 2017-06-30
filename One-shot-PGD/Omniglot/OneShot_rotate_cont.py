@@ -293,8 +293,8 @@ class Model:
         if if_cont==1:
             l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
             self.h_dim+=self.n_classes
-        # l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin2,[self.batch_size*self.path_length,1,self.h_dim])
-        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,tmp_h_dim])
+            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,self.h_dim])
+        # l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,tmp_h_dim])
 
         # if test_mode:
         #     l_range_dense2,l_range_dense2_origin=l_range_in,l_range_in
@@ -565,7 +565,13 @@ class Model:
                 for idx_batch in range(batch_total_number):#对于每一个batch
                     batch_start_time=time.time()
                     if pre_finished:
-                        lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
+                        if if_cont:
+                            cont_params=pickle.load(open('params/params_cont_aver45'))[-1]
+                            prev_weights_stable=prev_weights_stable[:-2]
+                            prev_weights_stable.append(cont_params)
+                            lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
+                        else:
+                            lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
                         # ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
                         # del ooo
                         # for ooo in ccc:
