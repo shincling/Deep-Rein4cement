@@ -529,7 +529,7 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
-        if 1:
+        if 0:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.95_re'))
@@ -542,9 +542,16 @@ class Model:
         yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
         x_test,y_test,yy_test=x_test[:total_test],y_test[:total_test],yy_test[:total_test]
-        if 0:
-            load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
-            lasagne.layers.set_all_param_values(self.network,load_params)
+        if 1:
+            # load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
+            # lasagne.layers.set_all_param_values(self.network,load_params)
+            if if_cont:
+                # cont_params=pickle.load(open('params/params_cont_10_aver33'))[-1]
+                cont_params=pickle.load(open('params/params_cont_pure_aver45'))[-1]
+                prev_weights_stable=pickle.load(gzip.open('params/params_rotate_triplet.pklz'))
+                prev_weights_stable=prev_weights_stable[:-2]
+                prev_weights_stable.append(cont_params)
+                lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
             print 'load succeed!'
         for epoch in range(self.n_epoch):
             begin_time = time.time()
@@ -566,7 +573,7 @@ class Model:
                     batch_start_time=time.time()
                     if pre_finished:
                         if if_cont:
-                            cont_params=pickle.load(open('params/params_cont_aver45'))[-1]
+                            cont_params=pickle.load(open('params/params_cont_10_aver33'))[-1]
                             prev_weights_stable=prev_weights_stable[:-2]
                             prev_weights_stable.append(cont_params)
                             lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
@@ -781,9 +788,9 @@ class Model:
                 pass
 
 test_mode=0
-if_cont=0
+if_cont=1
 global hid,slice_label
-hid=1
+hid=0
 slice_label=1
 lll=964*4
 global same_batch
