@@ -321,7 +321,7 @@ class Model:
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range,l_range_label:x_label})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
-        # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
+        params=[]#相当于只更新最后一个参数，别的不参与更新了
         # params=params[:]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
