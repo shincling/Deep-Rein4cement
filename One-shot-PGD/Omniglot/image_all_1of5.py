@@ -71,11 +71,13 @@ def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
     return x_train,y_train,x_test,y_test
 
 path='python/backall_all'
+path='python/backall_1200'
 pathdir=os.listdir(path)
 files=[path+'/'+ff for ff in pathdir]
 labels=get_labels(pathdir)
 
 path_eval='python/backall_eval'
+path_eval='python/backall_423'
 pathdir_eval=os.listdir(path_eval)
 files_eval=[path_eval+'/'+ff for ff in pathdir_eval]
 labels_eval=get_labels(pathdir_eval)
