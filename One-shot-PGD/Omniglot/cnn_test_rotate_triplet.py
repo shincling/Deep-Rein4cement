@@ -94,7 +94,9 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer_triplet)
-    params = params[-1:]
+
+    # params = params[-1:] # 这里是又问题的 ，所以还是去了吧，虽然结果有点巧合比较好
+
     grad=T.grad(loss_train,params)
 
     # updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
