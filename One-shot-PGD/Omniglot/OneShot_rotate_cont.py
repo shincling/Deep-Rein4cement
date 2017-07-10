@@ -442,6 +442,10 @@ class Model:
                 self.x_range_shared.set_value(xx_batch_t_repeat)
                 # self.x_range_label.set_value(np.zeros_like(yy_batch_vector))#去除标签信息来预测
                 self.x_range_label.set_value(yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))
+
+                #这个用real的意思是，此刻的样本标签也知道，用来选择，最好是1就破费了
+                self.x_range_label.set_value(yy_batch_vector_real[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))
+
                 self.x_range_memory.set_value(memory_t_repeat)
                 probbb_t = self.output_model_range()[0][:,0]
                 total_action[:,t]=np.argmax(probbb_t,axis=1)
