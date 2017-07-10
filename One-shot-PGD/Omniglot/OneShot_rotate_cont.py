@@ -294,7 +294,8 @@ class Model:
             l_range_dense2_origin=lasagne.layers.ConcatLayer((l_range_dense2_origin,l_range_label),axis=2)
             self.h_dim+=self.n_classes
             l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,self.h_dim])
-        # l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,tmp_h_dim])
+        else:
+            l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2_origin,[self.batch_size*self.path_length,1,tmp_h_dim])
 
         # if test_mode:
         #     l_range_dense2,l_range_dense2_origin=l_range_in,l_range_in
@@ -313,8 +314,8 @@ class Model:
             if if_cont==1:
                 l_range_status=ContChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,self.h_dim-self.n_classes,self.n_classes,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             else:
-                # l_range_status=ChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
-                l_range_status=finalChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
+                l_range_status=ChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
+                # l_range_status=finalChoiceLayer((l_range_memory,l_range_hidden),D3,D3,D3,nonlinearity=lasagne.nonlinearities.tanh) #[bs*pl,(n_class+1),dim]
             l_range_mu = lasagne.layers.ReshapeLayer(l_range_status,[self.batch_size,self.path_length,self.n_classes])
 
         '''模型的总体参数和更新策略等'''
@@ -552,7 +553,7 @@ class Model:
                 prev_weights_stable=prev_weights_stable[:-2]
                 prev_weights_stable.append(cont_params)
                 lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
-            print 'load succeed!'
+            print 'load succeed from train head!'
         for epoch in range(self.n_epoch):
             begin_time = time.time()
             batch_total_number = len(xx) / batch_size
@@ -789,6 +790,7 @@ class Model:
 
 test_mode=0
 if_cont=1
+#如果要cont，就把hid弄成0,直接在主循环里读取后面那个函数(self.network的）
 global hid,slice_label
 hid=0
 slice_label=1
