@@ -9,7 +9,7 @@ import theano
 from theano import tensor as T
 
 import lasagne
-from lasagne.nonlinearities import rectify, softmax, very_leaky_rectify
+from lasagne.nonlinearities import rectify, softmax, very_leaky_rectify,tanh
 from lasagne.updates import nesterov_momentum
 from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper
 from sklearn.preprocessing import LabelBinarizer,label_binarize
@@ -21,6 +21,7 @@ PIXELS = 20
 imageSize = PIXELS * PIXELS
 num_features = imageSize
 num_labels=4*964
+num_images=964*4*15#共77120个图，算上了旋转的
 num_images=964*4*15#共77120个图，算上了旋转的
 # num_images=964 #共77120个图，算上了旋转的
 h_dimension=300
@@ -45,10 +46,10 @@ def lasagne_model():
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
     # l_dropout2 = DropoutLayer(l_pool2, p=0.2)
 
-    l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=rectify)
+    l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=tanh)
     # l_dropout3 = DropoutLayer(l_hidden3, p=0.5)
 
-    l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=rectify)
+    l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=tanh)
     # l_dropout4 = DropoutLayer(l_hidden4, p=0.5)
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels, nonlinearity=softmax)
@@ -104,8 +105,8 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer)
-    updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
-    # updates =lasagne.updates.adagrad(loss_train, params, learning_rate=0.003)
+    # updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
+    updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
 
     # set up training and prediction functions
     train = theano.function(inputs=[X, Y], outputs=[loss_train,pred], updates=updates, allow_input_downcast=True)
@@ -130,7 +131,7 @@ def main():
             print np.argmax(yy_batch,axis=1)
             print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            if 0 and idx_batch%1==0:
+            if 1 and idx_batch%1==0:
                 acc=0
                 valid_batch_number=len(valid_X)/BATCHSIZE
                 for j in tqdm(range(valid_batch_number)):
