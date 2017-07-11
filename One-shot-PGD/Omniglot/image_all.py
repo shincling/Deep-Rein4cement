@@ -63,6 +63,11 @@ def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
         train_rank_dates[i]=train_dates[train_dates.keys()[i]]
     if cnn_only:
         return train_rank_dates
+    print '\ntrain keys:',train_dates.keys()
+    # print train_rank_dates.keys()
+    print 'test keys:',test_dates.keys(),'\n'
+
+
     x_train,y_train=get_sequence_images(train_rank_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
 
     # x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
