@@ -410,6 +410,7 @@ class Model:
             xx,yy=xx[:2000],yy[:2000]
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
+        acc0,ttt0=0.,0.
         acc,ttt=0.,0.
         acc2,ttt2=0.,0.
         acc3,ttt3=0.,0.
@@ -444,6 +445,7 @@ class Model:
                 self.x_range_label.set_value(yy_batch_vector[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))
 
                 #这个用real的意思是，此刻的样本标签也知道，用来选择，最好是1就破费了
+                #结果是1
                 self.x_range_label.set_value(yy_batch_vector_real[:,t].reshape(batch_size,1,n_classes).repeat(path_length,axis=1))
 
                 self.x_range_memory.set_value(memory_t_repeat)
@@ -486,6 +488,10 @@ class Model:
                 for jdx,jj in enumerate(line):
                     if jj not in dict:#第一次见到
                         dict[jj]=1
+                        if jdx!=0:
+                            ttt0+=1
+                            if total_action[idx,jdx] not in yy_batch[idx,:jdx]:
+                                acc0+=1
                     else:
                         if dict[jj]==1:#第二次见到
                             ttt+=1
@@ -515,6 +521,7 @@ class Model:
                 # print 'acc:',acc,'ttt:',ttt
 
         try:
+            print 'average ttt0 is :',float(ttt0)/(batch_size*batch_total_number),acc0/ttt0
             print 'average ttt is :',float(ttt)/(batch_size*batch_total_number)
             print 'average ttt2 is :',float(ttt2)/(batch_size*batch_total_number),acc2/ttt2
             print 'average ttt3 is :',float(ttt3)/(batch_size*batch_total_number),acc3/ttt3
