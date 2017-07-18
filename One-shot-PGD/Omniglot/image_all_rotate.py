@@ -19,6 +19,7 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
     final_x=np.zeros((total_roads,path_length,size[0],size[1]))
     final_y=np.zeros((total_roads,path_length))
     labels=data.keys()
+    print labels
     for one_sample in range(total_roads):
         label_list=random.sample(labels,total_label)
         one_shoot_label=label_list[-1]
@@ -76,6 +77,7 @@ def build_rotations(path,pathdir,files,labels,all_count,size):
 
     # train_dates={label:[] for label in train_labels}
     train_dates={}
+    test_dates={}
     for label in train_labels:
         '''每一个label都扩充成4倍，
         原来的原来的是原来的label，
@@ -85,25 +87,41 @@ def build_rotations(path,pathdir,files,labels,all_count,size):
         train_dates[int(label)+2*barr]=[]
         train_dates[int(label)+3*barr]=[]
 
+    for label in labels_eval:
+        test_dates[int(label)]=[]
+
+    print 'files_total:',len(files)
     for file in files:
         label=file[-11:-7]
+        # print label
         if label in train_labels:
+            # print 'train_data:',label
             train_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
             train_dates[int(label)+barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),90),size)))))
             train_dates[int(label)+2*barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),180),size)))))
             train_dates[int(label)+3*barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),270),size)))))
+        else:
+            test_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
+            # print 'test_data:',label
 
     if cnn_only:
         return train_dates
 
+    x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
+
+    # x_train,y_train=get_sequence_images(train_dates,train_labels,path_length,total_labels_per_seq,size,total_roads)
+    x_test,y_test=get_sequence_images(test_dates,labels_eval,path_length,total_labels_per_seq,size,total_roads)
+    return x_train,y_train,x_test,y_test
 
 path='python/backall_all'
+path='python/backall_1200'
 pathdir=os.listdir(path)
 files=[path+'/'+ff for ff in pathdir]
 print 'files for train:',len(files)
 labels=get_labels(pathdir)
 
 path_eval='python/backall_eval'
+path_eval='python/backall_423'
 pathdir_eval=os.listdir(path_eval)
 files_eval=[path_eval+'/'+ff for ff in pathdir_eval]
 labels_eval=get_labels(pathdir_eval)
@@ -116,17 +134,17 @@ size=(20,20)
 total_labels_per_seq=5
 path_length=11
 total_roads=2000
-cnn_only=1
+cnn_only=0
 label_fixed=1
 if cnn_only:
     ddd=build_rotations(path,pathdir,files,labels,all_count,size)
-    num_images=0
+    # num_images=0
     # for key in ddd:
     #     for j in ddd[key]:
     #         num_images+=1
     # print num_images
 else:
-    x_train,y_train,x_test,y_test=build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size)
+    x_train,y_train,x_test,y_test=build_rotations(path,pathdir,files+files_eval,labels,all_count,size)
     del files,files_eval
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
