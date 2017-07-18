@@ -101,6 +101,8 @@ else:
     del files,files_eval
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+print y_train[0]
+print y_train_shuffle[0]
 print 'Data Finished.'
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
