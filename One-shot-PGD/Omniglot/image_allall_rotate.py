@@ -74,6 +74,7 @@ def build(path,pathdir,files,files_eval,labels,labels_eval,all_count,size):
 def build_rotations(path,pathdir,files,labels,all_count,size):
     train_labels=labels
     barr=len(labels)
+    barr_test=len(labels_eval)
 
     # train_dates={label:[] for label in train_labels}
     train_dates={}
@@ -89,6 +90,9 @@ def build_rotations(path,pathdir,files,labels,all_count,size):
 
     for label in labels_eval:
         test_dates[int(label)]=[]
+        test_dates[int(label)+barr_test]=[]
+        test_dates[int(label)+2*barr_test]=[]
+        test_dates[int(label)+3*barr_test]=[]
 
     print 'files_total:',len(files)
     for file in files:
@@ -102,6 +106,9 @@ def build_rotations(path,pathdir,files,labels,all_count,size):
             train_dates[int(label)+3*barr].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),270),size)))))
         else:
             test_dates[int(label)].append(0.001*(255-np.float32(imresize(imread(file,1),size))))
+            test_dates[int(label)+barr_test].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),90),size)))))
+            test_dates[int(label)+2*barr_test].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),180),size)))))
+            test_dates[int(label)+3*barr_test].append(0.001*(255-np.float32((imresize(imrotate(imread(file,1),270),size)))))
             # print 'test_data:',label
 
     if cnn_only:
