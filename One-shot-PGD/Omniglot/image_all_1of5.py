@@ -37,7 +37,8 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
 def shuffle_label(y,counts):
     for i in y:
         uni_labes=list(set(list(i)))
-        random_labels=random.sample(range(5),counts)
+        # random_labels=random.sample(range(5),counts)
+        random_labels=random.sample(range(total_labels_per_seq),counts)
         for idx,j in enumerate(i):
             for ind in range(counts):
                 if j==uni_labes[ind]:
@@ -86,9 +87,11 @@ all_count=len(labels)+len(labels_eval)
 print "train:{},test:{}".format(len(labels),len(labels_eval))
 # ratio=0.7
 size=(20,20)
+size=(28,28)
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
 total_roads=2000
+total_roads=1000
 cnn_only=0
 label_fixed=1
 number_shots_total=5#这个量用来约束到底是几shot
@@ -101,6 +104,8 @@ else:
     del files,files_eval
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+print y_train_shuffle[10]
+print y_test_shuffle[10]
 print 'Data Finished.',number_shots_total
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
