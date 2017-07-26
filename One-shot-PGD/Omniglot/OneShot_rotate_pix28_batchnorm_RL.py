@@ -325,8 +325,9 @@ class Model:
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
         print 'params:',params
-        # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
-        params=[]#相当于只更新最后一个参数，别的不参与更新了
+        params=params[-3:]#相当于只更新最后一个参数，别的不参与更新了
+        # params=[]#相当于只更新最后一个参数，别的不参与更新了
+        print 'Trainable params:',params
         givens = {
             x_range: self.x_range_shared,
             x_label:self.x_range_label,
@@ -383,7 +384,7 @@ class Model:
                         reward=10
                     else:
                         reward=10
-                    print '100~!\n'
+                    # print '100~!\n'
                 else:
                     reward=-3
             if 0:
@@ -533,7 +534,7 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
-        total_test=10000
+        total_test=512
         if 1:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
