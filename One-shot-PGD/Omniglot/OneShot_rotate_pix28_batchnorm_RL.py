@@ -381,9 +381,9 @@ class Model:
                 if this_label in label_count_dict and len(label_count_dict)==1:#如果这个样本存放的action里面和它都是同label的
                     if idx_path_length==self.path_length-1:
                         reward=10
-                        # print '100~!\n'
                     else:
                         reward=10
+                    print '100~!\n'
                 else:
                     reward=-3
             if 0:
@@ -576,13 +576,13 @@ class Model:
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_batchnorm_0_0.9740625_2017-07-24 11:45:25.pklz'))#cos是94.5左右
             # batchnorm+triplet之后：
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00937674000462_batchnorm_last1_cnn_rotate_1_triplet_2017-07-24 14:39:54.pklz'))# 这套参数测过，很一般
-            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00839128953114_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 18:26:28.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
+            prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00839128953114_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 18:26:28.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00950340094602_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 20:48:45.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0256673505007_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-25 23:05:04.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0212742781895_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-25 16:21:20.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0202112830048_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 07:49:41.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0198791890612_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 11:08:28.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
-            prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0181135906469_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 15:40:51.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0181135906469_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 15:40:51.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
 
         else:
             pre_finished=0
@@ -765,7 +765,7 @@ class Model:
                     except:
                         fre=0
                     # if 1 or output_label=='1' and fre==0:
-                    if output_label=='1' and fre==0 and idx_batch%5==0:
+                    if output_label=='1' and fre==0 and idx_batch%50==0:
                     # if output_label=='1' and fre==0 and idx_batch>50 and idx_batch%5==0:
                         # print 'Begin to test.'
                         # if pre_finished:
@@ -846,11 +846,11 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=6, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='1200allup', help='Task#')
+    parser.add_argument('--save_path', type=str, default='batchnorm_rl', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
