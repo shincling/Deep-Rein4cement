@@ -13,6 +13,8 @@ print 'output_dir:',output_dir
 (rate,sig)=wav.read(path)
 logfbank_feat=logfbank(sig,rate)
 logfbank40_feat=logfbank(sig,rate,winstep=0.01,nfilt=40)
+logfbank0015_feat=logfbank(sig,rate,winstep=0.015,nfilt=40)
 np.save(output_dir+wav_name+'.26',logfbank_feat)
 np.save(output_dir+wav_name+'.40',logfbank40_feat)
+np.save(output_dir+wav_name+'.0015',logfbank0015_feat)
 
