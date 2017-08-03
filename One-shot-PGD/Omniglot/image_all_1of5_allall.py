@@ -24,7 +24,7 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
             print 'fuck!',len(data[lll])
     for one_sample in range(total_roads):
         label_list=random.sample(labels,total_label)
-        print 'label list:',label_list
+        # print 'label list:',label_list
         one_shoot_label=label_list[-1]
         final_x[one_sample,-1]=random.sample(data[one_shoot_label],1)[0]
         final_y[one_sample,-1]=int(one_shoot_label)
@@ -32,11 +32,16 @@ def get_sequence_images(data,labels,path_length,total_label,size,total_roads=100
             label=label_list[i]
             final_y[one_sample,i]=int(label)
             tmp_sum=0
-            for shot in range(number_shots_total):
-                tmp_sum+=random.sample(data[label],1)[0]
-            tmp_sum/=number_shots_total
+            tmp_sample=random.sample(data[label],number_shots_total)
+            for iidx,shot in enumerate(tmp_sample):
+                tmp_sum+=shot
+                # if iidx==0:
+                #     tmp_sum=shot
+                # else:
+                #     tmp_sum=(tmp_sum+shot)/2
+            tmp_sum/=float(number_shots_total)
             final_x[one_sample,i,:]=tmp_sum
-            del tmp_sum
+            del tmp_sum,tmp_sample
     return final_x,final_y
 
 def shuffle_label(y,counts):
@@ -145,7 +150,7 @@ size=(28,28)
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
 total_roads=2000
-total_roads=1000
+total_roads=2000
 cnn_only=0
 label_fixed=1
 number_shots_total=5#这个量用来约束到底是几shot
