@@ -11,7 +11,7 @@ from theano import tensor as T
 import lasagne
 from lasagne.nonlinearities import rectify, softmax, very_leaky_rectify,tanh
 from lasagne.updates import nesterov_momentum
-from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper , BatchNormLayer
+from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper , BatchNormLayer #batchnorm层噢
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 import image_all_rotate as image
 from tqdm import tqdm
