@@ -83,9 +83,10 @@ all_count=len(labels)+len(labels_eval)
 print "train:{},test:{}".format(len(labels),len(labels_eval))
 # ratio=0.7
 size=(20,20)
+size=(28,28)
 total_labels_per_seq=5
 path_length=11
-total_roads=5000
+total_roads=500
 cnn_only=0
 label_fixed=1
 if cnn_only:
@@ -96,6 +97,8 @@ else:
     del files,files_eval
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
-print 'Data Finished.'
+print y_train[0]
+print y_train_shuffle[0]
+print 'size:',x_train[10][0].shape,'Data Finished.'
 # if __name__=="__main__":
 #     build(path,pathdir,files,labels,all_count,ratio,size)
