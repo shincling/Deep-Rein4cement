@@ -551,14 +551,17 @@ class Model:
         yy_train,yy_test=image_all.y_train_shuffle,image_all.y_test_shuffle
         xx,yy=x_train,yy_train
         x_test,y_test,yy_test=x_test[:total_test],y_test[:total_test],yy_test[:total_test]
-        if 0:
+        if 1:
             # load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
             # lasagne.layers.set_all_param_values(self.network,load_params)
             if if_cont:
-                # cont_params=pickle.load(open('params/params_cont_10_aver33'))[-1]
-                cont_params=pickle.load(open('params/params_cont_pure_aver45'))[-1]
-                cont_params=pickle.load(open('params/params_contRNN_2017-08-03 20:51:12'))
-                prev_weights_stable=pickle.load(gzip.open('params/params_rotate_triplet.pklz'))
+                if 1:
+                    cont_params=pickle.load(open('params/params_contRNN_2017-08-04 10:58:07'))
+                    prev_weights_stable=pickle.load(open('params/params_rnn_cont_4_29_4.77601320316e-10_2017-08-04 07:15:47'))
+                    assert len(prev_weights_stable)-len(cont_params)==2
+                    prev_weights_stable[2:]=cont_params
+                else:
+                    prev_weights_stable=pickle.load(open('params/params_rnn_cont_4_29_4.77601320316e-10_2017-08-04 07:15:47'))
                 lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
             print 'load succeed from train head!'
         for epoch in range(self.n_epoch):
@@ -579,21 +582,6 @@ class Model:
                 tmp_cost, tmp_result, tmp_reward = 0, 0, 0
                 for idx_batch in range(batch_total_number):#对于每一个batch
                     batch_start_time=time.time()
-                    if pre_finished:
-                        if if_cont:
-                            cont_params=pickle.load(open('params/params_cont_10_aver33'))[-1]
-                            prev_weights_stable=prev_weights_stable[:-2]
-                            prev_weights_stable.append(cont_params)
-                            lasagne.layers.set_all_param_values(self.network,prev_weights_stable)
-                        else:
-                            lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable)
-                        # ccc=[ooo[0] for ooo in lasagne.layers.get_all_param_values(self.network)]
-                        # del ooo
-                        # for ooo in ccc:
-                        #     print ooo,'\n'
-                        print 'load succeed!\n'
-                        pre_finished=0
-                        hid=0
                 # 初始化两个循环的参数，state和概率
                     xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
                     yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
@@ -745,8 +733,8 @@ hid=0
 slice_label=1
 lll=964*4
 global same_batch
-# same_batch=8
-same_batch=0
+same_batch=8
+# same_batch=0
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=int, default=1, help='Task#')
@@ -757,16 +745,16 @@ if __name__=='__main__':
     parser.add_argument('--h_dimension', type=int, default=1, help='Dimension#')
     parser.add_argument('--tmp_h_dim', type=int, default=1, help='tmp_h_Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
-    parser.add_argument('--batch_size', type=int, default=64, help='Task#')
-    parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
+    parser.add_argument('--batch_size', type=int, default=128, help='Task#')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='Task#')
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.2, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.02, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='re_sepTrain', help='Task#')
+    parser.add_argument('--save_path', type=str, default='rnn_cont', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
