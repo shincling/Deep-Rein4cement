@@ -19,20 +19,20 @@ def action_to_vector_real(x, n_classes): #x是bs*path_length
             result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
     return np.int32(result)
 
-def action_to_vector(x, n_classes,p=0): #x是bs*path_length
+def action_to_vector(x, n_classes,p=1): #x是bs*path_length
     # p=0 #p是标签正常的概率
-    result = np.zeros([x.shape[0], x.shape[1], n_classes])
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            if np.random.rand()<p and j!=x.shape[1]-1:
-                result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
-
     # result = np.zeros([x.shape[0], x.shape[1], n_classes])
     # for i in range(x.shape[0]):
     #     for j in range(x.shape[1]):
-    #         if np.random.rand()<p:
+    #         if np.random.rand()<p and j!=x.shape[1]-1:
     #             result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
-    # result= result+1
+
+    result = np.zeros([x.shape[0], x.shape[1], n_classes])
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            if np.random.rand()<p:
+                result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+    result= result+np.random.rand()
     return np.int32(result)
 
 def reward_count(total_reward, length, discout=0.99):
@@ -321,6 +321,7 @@ class Model:
         print 'params:',params
         # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
         params=params[2:]#相当于只更新最后一个参数，别的不参与更新了
+        params=[]#相当于只更新最后一个参数，别的不参与更新了
         print 'trainable params:',params
         givens = {
             x_range: self.x_range_shared,
@@ -418,9 +419,10 @@ class Model:
         for idx_batch in tqdm(range(batch_total_number)):#对于每一个batch
             xx_batch = xx[idx_batch * batch_size:(idx_batch + 1) * batch_size]
             yy_batch = yy[idx_batch * batch_size:(idx_batch + 1) * batch_size]
-            yy_batch_vector=action_to_vector(yy_batch,self.n_classes,0)
+            yy_batch_vector=action_to_vector(yy_batch,self.n_classes,1)
             # yy_batch_vector=action_to_vector_real(yy_batch,self.n_classes)
             yy_batch_vector_real=action_to_vector_real(yy_batch,self.n_classes)
+            yy_batch_vector_real=yy_batch_vector
 
             total_state = np.zeros([batch_size, path_length, n_classes+1,h_dim])
             total_memory_label=np.zeros([batch_size,path_length,n_classes,path_length],dtype=np.int32)-1 #取作-1，标志着还没有存放过样本
@@ -555,7 +557,7 @@ class Model:
             # load_params=pickle.load(open('params/params_119_19_99_525.694008567_2016-11-21 06:20:43'))
             # lasagne.layers.set_all_param_values(self.network,load_params)
             if if_cont:
-                if 1:
+                if 0:
                     cont_params=pickle.load(open('params/params_contRNN_2017-08-04 10:58:07'))
                     prev_weights_stable=pickle.load(open('params/params_rnn_cont_4_29_4.77601320316e-10_2017-08-04 07:15:47'))
                     assert len(prev_weights_stable)-len(cont_params)==2
