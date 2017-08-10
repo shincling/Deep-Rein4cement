@@ -4,6 +4,8 @@ from python_speech_features import logfbank
 import scipy.io.wavfile as wav
 import numpy as np
 import os
+import gzip
+import pickle
 
 def get_labels(dir):
     labels_list=[]
@@ -38,22 +40,26 @@ def get_features(path):
     feat_list=split_speech(logfbank0015_feat)
     return label,feat_list
 
+load_data=None
+load_data='dataset/spk1-15_dict_fbank40.pklz'
 
-# path=sys.argv[1]
-path='/home/sw/Shin/数据集/多说话人语音数据 - WSJ0/spk1-15'
-pathdir=os.listdir(path)
-files=[path+'/'+ff for ff in pathdir]
-labels=get_labels(pathdir)
-total_labels=range(len(labels))
+if load_data:
+    print 'load data:',load_data
+    data_dict=pickle.load(gzip.open(load_data))
+else:
+    path='/home/sw/Shin/数据集/多说话人语音数据 - WSJ0/spk1-15'
+    pathdir=os.listdir(path)
+    files=[path+'/'+ff for ff in pathdir]
+    labels=get_labels(pathdir)
+    total_labels=range(len(labels))
 
-data_dict={label:[] for label in total_labels}
-for file in files:
-    label,feat_list=get_features(file)
-    data_dict[labels.index(label)].extend(feat_list)
+    data_dict={label:[] for label in total_labels}
+    for file in files:
+        label,feat_list=get_features(file)
+        data_dict[labels.index(label)].extend(feat_list)
 
+    f = gzip.open('dataset/spk1-15_dict_fbank40.pklz', 'wb')
+    pickle.dump(data_dict, f)
+    f.close()
 
-
-
-
-# np.save(output_dir+wav_name+'.0015',logfbank0015_feat)
-pass
+print 'data finished.'
