@@ -16,11 +16,13 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 import speech_features_forDirs as speech
 from tqdm import tqdm
 
-BATCHSIZE = 128
-PIXELS = speech.feat_list[0].shape[0]
-speechSize = speech.feat_list[0].shape
-num_labels=4*964
-num_speechs=len(speech.feat_list)
+BATCHSIZE = 32
+PIXELS = speech.data_dict[0][0].shape[0]
+speechSize = speech.data_dict[0][0].shape
+num_labels=len(speech.data_dict)
+print [len(speech.data_dict[label]) for label in speech.data_dict]
+num_speechs=np.array([len(speech.data_dict[label]) for label in speech.data_dict]).sum()
+print 'all labels:',num_labels,'all samples:',num_speechs
 h_dimension=300
 valid_size=num_speechs/10
 size=num_speechs-valid_size
