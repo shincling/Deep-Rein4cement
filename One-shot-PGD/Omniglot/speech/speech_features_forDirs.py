@@ -85,8 +85,10 @@ load_data='dataset/spkall_dict_fbank40.pklz'
 
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
-total_roads=20
+total_roads=200
+total_roads_test=20
 cnn_only=0
+test_split=1#意思是要不要从spkall里面分出来部分作为one-shot的test样本
 label_fixed=1
 number_shots_total=1#这个量用来约束到底是几shot
 
@@ -115,14 +117,22 @@ else:
     f.close()
 
 print 'data finished.'
+
+if test_split:
+    print 'Test split from spkall start............'
+    total_labels_num=len(data_dict)
+    test_labels_num=total_labels_num/10
+    print 'total_labes_num:',total_labels_num,'test_labes_num:',test_labels_num
+    test_labels=data_dict.keys()[(-1*test_labels_num):]
+    data_dict_test={ll:data_dict[ll] for ll in test_labels}
+
 speechSize = data_dict[0][0].shape
 if not cnn_only: # 不只是得到cnn的训练dict数据
-    x_train,y_train=get_sequence_speechs(data_dict,path_length,total_labels_per_seq,speechSize,total_roads=10000)
+    x_train,y_train=get_sequence_speechs(data_dict,path_length,total_labels_per_seq,speechSize,total_roads=total_roads)
+    x_test,y_test=get_sequence_speechs(data_dict_test,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test)
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-    # y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
-    print x_train[:10]
+    y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
     print y_train[:10]
     print y_train_shuffle[:10]
-    pass
 
 
