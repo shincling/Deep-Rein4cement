@@ -26,7 +26,9 @@ print 'all labels:',num_labels,'all samples:',num_speechs
 h_dimension=300
 valid_size=num_speechs/10
 size=num_speechs-valid_size
+global valid_best
 valid_best=0.95
+print valid_best
 
 def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
@@ -51,7 +53,7 @@ def lasagne_model():
     # l_dropout3 = DropoutLayer(l_hidden3, p=0.3)
 
     l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=tanh)
-    # l_dropout4 = DropoutLayer(l_hidden4, p=0.5)
+    l_hidden4 = DropoutLayer(l_hidden4, p=0.5)
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels, nonlinearity=softmax)
 
@@ -60,10 +62,11 @@ def lasagne_model():
 def main():
     # load the training and validation data sets
     # labels=int(0.7*speech.all_count)
+    global valid_best
     data=speech.data_dict
     labels=data.keys()
-    assert (PIXELS,PIXELS)==speechSize
-    train_X=np.zeros([num_speechs,1,PIXELS,PIXELS])
+    # assert (PIXELS,PIXELS)==speechSize
+    train_X=np.zeros([num_speechs,1,speechSize[0],speechSize[1]])
     train_y=np.zeros([num_speechs,len(labels)])
     i=0
     for label in (data.keys()):
@@ -107,7 +110,7 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer,trainable=True)
-    updates = nesterov_momentum(loss_train, params, learning_rate=0.03, momentum=0.9)
+    updates = nesterov_momentum(loss_train, params, learning_rate=0.003, momentum=0.9)
     # updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
 
     # set up training and prediction functions
@@ -156,7 +159,7 @@ def main():
         # save weights
         if i%5:
             all_params = helper.get_all_param_values(output_layer)
-            f = gzip.open('params/weights_cnn_only_rotate_{}.pklz'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('speech_params/validbest_cnn_allbatchnorm_{}_{}_{}.pklz'.format(i,acc,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
