@@ -10,6 +10,18 @@ import time
 import gzip
 import pickle
 
+def shuffle_label(y,counts):
+    for i in y:
+        uni_labes=list(set(list(i)))
+        # random_labels=random.sample(range(5),counts)
+        random_labels=random.sample(range(total_labels_per_seq),counts)
+        for idx,j in enumerate(i):
+            for ind in range(counts):
+                if j==uni_labes[ind]:
+                    i[idx]=random_labels[ind]
+                    break
+    return y
+
 def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000):
     final_x=np.zeros((total_roads,path_length,size[0],size[1]))
     final_y=np.zeros((total_roads,path_length))
@@ -106,10 +118,11 @@ print 'data finished.'
 speechSize = data_dict[0][0].shape
 if not cnn_only: # 不只是得到cnn的训练dict数据
     x_train,y_train=get_sequence_speechs(data_dict,path_length,total_labels_per_seq,speechSize,total_roads=10000)
+    y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    # y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
     print x_train[:10]
     print y_train[:10]
-    # y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-    # y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+    print y_train_shuffle[:10]
     pass
 
 
