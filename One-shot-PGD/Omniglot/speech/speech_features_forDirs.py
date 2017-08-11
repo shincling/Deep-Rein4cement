@@ -2,12 +2,37 @@
 import sys
 from python_speech_features import logfbank
 from tqdm import tqdm
+import random
 import scipy.io.wavfile as wav
 import numpy as np
 import os
 import time
 import gzip
 import pickle
+
+def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000):
+    final_x=np.zeros((total_roads,path_length,size[0],size[1]))
+    final_y=np.zeros((total_roads,path_length))
+    labels=data.keys()
+    print labels
+    for one_sample in range(total_roads):
+        label_list=random.sample(labels,total_label)
+        # print 'label list:',label_list
+        one_shoot_label=label_list[-1]
+        final_x[one_sample,-1]=random.sample(data[one_shoot_label],1)[0]
+        final_y[one_sample,-1]=int(one_shoot_label)
+        for i in range(path_length-1):
+            label=label_list[i]
+            final_y[one_sample,i]=int(label)
+            tmp_sum=0
+            tmp_sample=random.sample(data[label],number_shots_total)
+            for iidx,shot in enumerate(tmp_sample):
+                tmp_sum+=shot
+            tmp_sum/=float(number_shots_total)
+            final_x[one_sample,i,:]=tmp_sum
+            del tmp_sum,tmp_sample
+    return final_x,final_y
+
 
 def get_labels(dir):
     labels_list=[]
@@ -46,6 +71,13 @@ load_data=None
 # load_data='dataset/spk1-15_dict_fbank40.pklz'
 load_data='dataset/spkall_dict_fbank40.pklz'
 
+total_labels_per_seq=5
+path_length=total_labels_per_seq+1
+total_roads=20
+cnn_only=0
+label_fixed=1
+number_shots_total=1#这个量用来约束到底是几shot
+
 if load_data:
     print 'load data:',load_data
     timell=time.time()
@@ -64,9 +96,20 @@ else:
     for file in tqdm(files):
         label,feat_list=get_features(file)
         data_dict[labels.index(label)].extend(feat_list)
+    del files
 
     f = gzip.open('dataset/spkall_dict_fbank40.pklz', 'wb')
     pickle.dump(data_dict, f)
     f.close()
 
 print 'data finished.'
+speechSize = data_dict[0][0].shape
+if not cnn_only: # 不只是得到cnn的训练dict数据
+    x_train,y_train=get_sequence_speechs(data_dict,path_length,total_labels_per_seq,speechSize,total_roads=10000)
+    print x_train[:10]
+    print y_train[:10]
+    # y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    # y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+    pass
+
+
