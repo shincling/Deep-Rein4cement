@@ -1,6 +1,38 @@
 # coding=utf-8
 import numpy as np
 from collections import OrderedDict
+from tqdm import tqdm
+from ark import read_utt_data
+import pickle
+import gzip
+import time
+
+def read_features(train_dict,train_of_test):
+    train_fea={}
+    for train in tqdm(train_dict):
+        ark_path_list=[]
+        for file_idx,num_range in enumerate(fisher_list):
+            if num_range[0]<=int(train[:5])<=num_range[1]:
+                file_path='/home/sw/Shin/fisher/fisher_16k/pitchlog/raw_fbank_pitch_fisher_16k.'+str(file_idx+1)
+                file_cont=open(file_path+'.scp')
+                file_cont_lines=file_cont.readlines()
+                for line in file_cont_lines:
+                    line=line.strip()
+                    if train in line:
+                        ark_path_list.append(file_path+'.ark:'+line[(line.rindex(':')+1):])
+        # print train
+        # print ark_path_list,'\n'
+        if len(ark_path_list)<5:
+            print 'not enough length.',train
+            ark_path_list.pop()
+        train_fea[train]=np.array([read_utt_data(ark_path) for ark_path in ark_path_list])
+        if train_of_test:
+            np.save('dataset/fisher/train/'+train+str(len(ark_path_list)),train_fea[train])
+        else:
+            np.save('dataset/fisher/test/'+train+str(len(ark_path_list)),train_fea[train])
+
+    print 'length:',len(train_fea)
+    return train_fea
 
 text_detail='/home/sw/Shin/fisher/doc/fe_03_p1_calldata.tbl'
 idx_line=0
@@ -54,11 +86,11 @@ while True:
     br_ex=br
     sum_ex=sum
 
-    print total_maledict
-    print total_femaledict
-    idx_line+=1
-    if idx_line>10:
-        break
+    # print total_maledict
+    # print total_femaledict
+    # idx_line+=1
+    # if idx_line>10:
+    #     break
 
 print 'Finished Total dict.'
 train_female_label=total_femaledict.keys()[:train_total_num_perSex]
@@ -79,22 +111,28 @@ print test_dict
 print 'Finished train/test dict.'
 
 
-fisher_list=[(1,391),(391,465),(930,1389),(1389,1888),(1889,2362),(2362,2894),(2894,3352),
+fisher_list=[(1,391),(391,930),(930,1389),(1389,1888),(1889,2362),(2362,2894),(2894,3352),
              (3352,3837),(3837,4319),(4319,4808),(4808,5321),(5321,5850)]
 
-for train in train_dict:
-    ark_path_list=[]
-    for file_idx,num_range in enumerate(fisher_list):
-        if num_range[0]<=int(train[:5])<=num_range[1]:
-            file_path='/home/sw/Shin/fisher/fisher_16k/pitchlog/raw_fbank_pitch_fisher_16k.'+str(file_idx+1)
-            file_cont=open(file_path+'.scp')
-            file_cont_lines=file_cont.readlines()
-            for line in file_cont_lines:
-                line=line.strip()
-                if train in line:
-                    ark_path_list.append(file_path+'.ark:'+line[(line.rindex(':')+1):])
-    print train
-    print ark_path_list,'\n'
+tt=time.time()
+test_fea=read_features(test_dict,0)
+# f = gzip.open('dataset/fisher/test_{}.pklz'.format(2*test_total_num_perSex), 'wb')
+# pickle.dump(test_fea, f)
+# f.close()
+# del test_fea
+print 'Test pickle cost time :',time.time()-tt
+
+tt=time.time()
+train_fea=read_features(train_dict,1)
+# f = gzip.open('dataset/fisher/train_{}.pklz'.format(2*train_total_num_perSex), 'wb')
+# pickle.dump(train_fea, f)
+# f.close()
+# del train_fea
+print 'Train pickle cost time :',time.time()-tt
+
+
+
+
 
 
 
