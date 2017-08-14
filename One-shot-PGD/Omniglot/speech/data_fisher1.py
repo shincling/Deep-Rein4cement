@@ -53,13 +53,13 @@ while True:
         print 'Repeated speaker!'
     br_ex=br
     sum_ex=sum
+
     # print total_maledict
     # print total_femaledict
-
-
     # idx_line+=1
     # if idx_line>10:
-    #     raise EOFError
+    #     break
+
 print 'Finished Total dict.'
 train_female_label=total_femaledict.keys()[:train_total_num_perSex]
 train_male_label=total_maledict.keys()[:train_total_num_perSex]
@@ -72,5 +72,5 @@ test_maledict={label:total_maledict[label] for label in test_male_label}
 del train_femaledict,train_maledict
 print 'Finished train/test dict.'
 
-pass
+
 
