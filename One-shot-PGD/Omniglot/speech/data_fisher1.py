@@ -54,11 +54,11 @@ while True:
     br_ex=br
     sum_ex=sum
 
-    # print total_maledict
-    # print total_femaledict
-    # idx_line+=1
-    # if idx_line>10:
-    #     break
+    print total_maledict
+    print total_femaledict
+    idx_line+=1
+    if idx_line>10:
+        break
 
 print 'Finished Total dict.'
 train_female_label=total_femaledict.keys()[:train_total_num_perSex]
@@ -69,8 +69,35 @@ train_femaledict={label:total_femaledict[label] for label in train_female_label}
 train_maledict={label:total_maledict[label] for label in train_male_label}
 test_femaledict={label:total_femaledict[label] for label in test_female_label}
 test_maledict={label:total_maledict[label] for label in test_male_label}
-del train_femaledict,train_maledict
+del total_femaledict,total_maledict
+train_femaledict.update(train_maledict)
+train_dict=train_femaledict
+test_femaledict.update(test_maledict)
+test_dict=test_femaledict
+print train_dict
+print test_dict
 print 'Finished train/test dict.'
+
+
+fisher_list=[(1,391),(391,465),(930,1389),(1389,1888),(1889,2362),(2362,2894),(2894,3352),
+             (3352,3837),(3837,4319),(4319,4808),(4808,5321),(5321,5850)]
+
+for train in train_dict:
+    ark_path_list=[]
+    for file_idx,num_range in enumerate(fisher_list):
+        if num_range[0]<=int(train[:5])<=num_range[1]:
+            file_path='/home/sw/Shin/fisher/fisher_16k/pitchlog/raw_fbank_pitch_fisher_16k.'+str(file_idx+1)
+            file_cont=open(file_path+'.scp')
+            file_cont_lines=file_cont.readlines()
+            for line in file_cont_lines:
+                line=line.strip()
+                if train in line:
+                    ark_path_list.append(file_path+'.ark:'+line[(line.rindex(':')+1):])
+    print train
+    print ark_path_list,'\n'
+
+
+
 
 
 
