@@ -152,7 +152,7 @@ def main():
 
             # raise EOFError
 
-            if train_acc>-0.9 and idx_batch%1000==0 and idx_batch>=0:
+            if train_acc>0.9 and idx_batch%1000==0 and idx_batch>=0:
                 acc=0
                 valid_batch_number=len(valid_list)/BATCHSIZE
                 for j in tqdm(range(valid_batch_number)):
