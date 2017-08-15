@@ -36,7 +36,7 @@ h_dimension=300
 valid_size=num_speechs/10
 size=num_speechs-valid_size
 global valid_best
-valid_best=0.95
+valid_best=0.85
 print valid_best
 
 
@@ -108,7 +108,7 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer,trainable=True)
-    updates = nesterov_momentum(loss_train, params, learning_rate=0.003, momentum=0.9)
+    updates = nesterov_momentum(loss_train, params, learning_rate=0.2, momentum=0.9)
     # updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
 
     # set up training and prediction functions
@@ -124,6 +124,7 @@ def main():
     for i in range(450):
         train_list,valid_list=get_data(train_files,num_speechs,size,valid_size)
         batch_total_number = size / BATCHSIZE
+        train_acc_aver=0.0
         for idx_batch in range (batch_total_number):
             batch_list = train_list[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE]
             xx_batch=np.zeros((BATCHSIZE,1,speechSize[0],speechSize[1]))
@@ -137,14 +138,16 @@ def main():
 
             train_loss ,pred = train(xx_batch,yy_batch)
             count=np.count_nonzero(np.int32(pred ==np.argmax(yy_batch,axis=1)))
-            print i,idx_batch,'| Tloss:', train_loss,'| Count:',count,'| Acc:',float(count)/(BATCHSIZE)
+            train_acc = float(count) / (BATCHSIZE)
+            print i,idx_batch,'| Tloss:', train_loss,'| Count:',count,'| Acc:',train_acc
             print pred
             print np.argmax(yy_batch,axis=1)
             print "time:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            train_acc_aver += train_acc
 
             # raise EOFError
 
-            if 1 and idx_batch%15==0:
+            if 1 and idx_batch%15==0 and idx_batch>0:
                 acc=0
                 valid_batch_number=len(valid_list)/BATCHSIZE
                 for j in tqdm(range(valid_batch_number)):
@@ -165,14 +168,14 @@ def main():
                     print 'new valid_best:',valid_best,'-->',acc
                     valid_best=acc
                     all_params = helper.get_all_param_values(output_layer)
-                    f = gzip.open('speech_params/validbest_cnn_fisher_{}_{}_{}.pklz'.format(i,valid_best,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+                    f = gzip.open('speech_params/validbest_cnn_fisher_{}_validacc{}_{}.pklz'.format(i,valid_best,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
                     pickle.dump(all_params, f)
                     f.close()
 
         # save weights
         if i%1==0:
             all_params = helper.get_all_param_values(output_layer)
-            f = gzip.open('speech_params/validbest_cnn_fisher_{}_{}_{}.pklz'.format(i,acc,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('speech_params/validbest_cnn_fisher_averacc{}_{}_{}.pklz'.format(i,train_acc_aver/batch_total_number,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
