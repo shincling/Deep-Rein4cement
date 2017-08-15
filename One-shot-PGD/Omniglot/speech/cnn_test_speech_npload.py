@@ -19,6 +19,7 @@ import os
 
 train_load_path='/home/shijing/data/fisher/train_pix40/' #4768个类别
 train_load_path='dataset/fisher/train_part/' #
+train_load_path='/media/sw/Elements/fisher_dataset/train_pix40/' #
 # test_load_path='/home/shijing/data/fisher/test_pix40/' #665个类别
 train_files=os.listdir(train_load_path)
 # test_files=os.listdir(test_load_path)
@@ -124,6 +125,10 @@ def main():
     for i in range(450):
         train_list,valid_list=get_data(train_files,num_speechs,size,valid_size)
         batch_total_number = size / BATCHSIZE
+        if 1:
+            valid_list_limit=3000
+            valid_list=valid_list[:valid_list_limit]
+        print 'batch_total_number:',batch_total_number
         train_acc_aver=0.0
         for idx_batch in range (batch_total_number):
             batch_list = train_list[idx_batch * BATCHSIZE:(idx_batch + 1) * BATCHSIZE]
@@ -147,7 +152,7 @@ def main():
 
             # raise EOFError
 
-            if 1 and idx_batch%15==0 and idx_batch>0:
+            if train_acc>-0.9 and idx_batch%1000==0 and idx_batch>=0:
                 acc=0
                 valid_batch_number=len(valid_list)/BATCHSIZE
                 for j in tqdm(range(valid_batch_number)):
@@ -171,6 +176,12 @@ def main():
                     f = gzip.open('speech_params/validbest_cnn_fisher_{}_validacc{}_{}.pklz'.format(i,valid_best,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
                     pickle.dump(all_params, f)
                     f.close()
+
+            if idx_batch%3000==0:
+                all_params = helper.get_all_param_values(output_layer)
+                f = gzip.open('speech_params/validbest_cnn_fisher_{}_idxbatch{}_{}.pklz'.format(i,idx_batch,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+                pickle.dump(all_params, f)
+                f.close()
 
         # save weights
         if i%1==0:
