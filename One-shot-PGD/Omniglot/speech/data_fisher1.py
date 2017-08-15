@@ -18,7 +18,8 @@ def split_speech(features,length=None):#如果不给第二个参数，就默认�
     return list
 
 def read_features(train_dict,train_of_test):
-    train_fea={}
+    # train_fea={}
+    counter=0
     for train in tqdm(train_dict):
         ark_path_list=[]
         for file_idx,num_range in enumerate(fisher_list):
@@ -40,9 +41,9 @@ def read_features(train_dict,train_of_test):
         for ark_path in ark_path_list:
             one_fea=read_utt_data(ark_path)
             tmp_list.extend(split_speech(one_fea))
-        train_fea[train]=tmp_list
+        # train_fea[train]=tmp_list
 
-        if len(train_fea[train])<5:
+        if len(tmp_list )<5:
             # print 'not enough length.',train
             continue
 
@@ -50,12 +51,14 @@ def read_features(train_dict,train_of_test):
         # train_fea[train]=0
         if train_of_test:
             # np.save('dataset/fisher/train/'+train+str(len(ark_path_list)),train_fea[train])
-            np.save('/media/sw/Elements/fisher_dataset/train_pix40/'+train+'_'+str(len(train_fea[train])),train_fea[train])
+            np.save('/media/sw/Elements/fisher_dataset/train_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
         else:
             # np.save('dataset/fisher/test/'+train+str(len(ark_path_list)),train_fea[train])
-            np.save('/media/sw/Elements/fisher_dataset/test_pix40/'+train+'_'+str(len(train_fea[train])),train_fea[train])
+            np.save('/media/sw/Elements/fisher_dataset/test_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
+        counter+=1
 
-    print 'length:',len(train_fea)
+    print 'length:',counter
+    return None
     return train_fea
 
 text_detail='/home/sw/Shin/fisher/doc/fe_03_p1_calldata.tbl'
@@ -110,11 +113,11 @@ while True:
     br_ex=br
     sum_ex=sum
 
-    print total_maledict
-    print total_femaledict
-    idx_line+=1
-    if idx_line>10:
-        break
+    # print total_maledict
+    # print total_femaledict
+    # idx_line+=1
+    # if idx_line>10:
+    #     break
 
 print 'Finished Total dict.'
 train_female_label=total_femaledict.keys()[:train_total_num_perSex]
@@ -138,13 +141,13 @@ print 'Finished train/test dict.'
 fisher_list=[(1,391),(391,930),(930,1389),(1389,1888),(1889,2362),(2362,2894),(2894,3352),
              (3352,3837),(3837,4319),(4319,4808),(4808,5321),(5321,5850)]
 
-# tt=time.time()
+tt=time.time()
 test_fea=read_features(test_dict,0)
 # f = gzip.open('dataset/fisher/test_{}.pklz'.format(2*test_total_num_perSex), 'wb')
 # pickle.dump(test_fea, f)
 # f.close()
 # del test_fea
-# print 'Test pickle cost time :',time.time()-tt
+print 'Test pickle cost time :',time.time()-tt
 
 tt=time.time()
 train_fea=read_features(train_dict,1)
