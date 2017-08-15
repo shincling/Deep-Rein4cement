@@ -66,17 +66,17 @@ def lasagne_model():
     l_conv1b = Conv2DLayer(l_conv1, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
     l_conv1b = batch_norm(l_conv1b)
     l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=(2,2))
-    # l_dropout1 = DropoutLayer(l_pool1, p=0.2)
+    l_pool1 = DropoutLayer(l_pool1, p=0.2)
 
     l_conv2 = Conv2DLayer(l_pool1, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
     l_conv2b = Conv2DLayer(l_conv2, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
     l_conv2b = batch_norm(l_conv2b)
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
-    # l_dropout2 = DropoutLayer(l_pool2, p=0.2)
+    l_pool2 = DropoutLayer(l_pool2, p=0.2)
 
     l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=tanh)
     l_hidden3 = batch_norm(l_hidden3)
-    # l_dropout3 = DropoutLayer(l_hidden3, p=0.3)
+    l_hidden3 = DropoutLayer(l_hidden3, p=0.3)
 
     l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=tanh)
     l_hidden4 = DropoutLayer(l_hidden4, p=0.5)
@@ -88,35 +88,7 @@ def lasagne_model():
 def main():
     # load the training and validation data sets
     # labels=int(0.7*speech.all_count)
-    # global valid_best
-    # data=speech.data_dict
-    # labels=data.keys()
-    # # assert (PIXELS,PIXELS)==speechSize
-    # train_X=np.zeros([num_speechs,1,speechSize[0],speechSize[1]])
-    # train_y=np.zeros([num_speechs,len(labels)])
-    # i=0
-    # for label in (data.keys()):
-    #     for im in data[label]:
-    #         train_X[i,0]=im
-    #         train_y[i]=label_binarize([label],labels)[0]
-    #         i+=1
-    #         if i>=num_speechs:
-    #             break
-    #         if i%500==0:
-    #             print 'idx of speechs:',i
-    #     if i>=num_speechs:
-    #         break
-    # zipp=zip(train_X,train_y)
-    # random.shuffle(zipp)
-    # xx=np.array([one[0] for one in zipp])
-    # yy=np.array([one[1] for one in zipp])
-    # del train_X,train_y
-    # train_X=xx[:size]
-    # train_y=yy[:size]
-    # valid_X=xx[size:]
-    # valid_y=yy[size:]
-    # del xx,yy
-    # print 'Shuffle finish. Begin to build model.'
+    global valid_best
 
     X = T.tensor4()
     Y = T.matrix()
@@ -174,13 +146,18 @@ def main():
 
             if 1 and idx_batch%15==0:
                 acc=0
-                valid_batch_number=len(valid_X)/BATCHSIZE
+                valid_batch_number=len(valid_list)/BATCHSIZE
                 for j in tqdm(range(valid_batch_number)):
-                    x_batch = np.float32(valid_X[j* BATCHSIZE:(j+ 1) * BATCHSIZE])
-                    y_batch = np.float32(valid_y[j* BATCHSIZE:(j+ 1) * BATCHSIZE])
-                    print len(x_batch),len(y_batch)
+                    batch_list = valid_list[j * BATCHSIZE:(j + 1) * BATCHSIZE]
+                    x_batch=np.zeros((BATCHSIZE,1,speechSize[0],speechSize[1]))
+                    y_batch=np.zeros((BATCHSIZE,num_labels_train))
+                    for ind,one_name in enumerate(batch_list):
+                        aim_file_name,aim_idx=one_name.split('.')
+                        aim_file_name+='.npy'
+                        aim_file_name_full=train_load_path+aim_file_name
+                        x_batch[ind,0]=np.load(aim_file_name_full)[int(aim_idx)]
+                        y_batch[ind]=label_binarize([train_files.index(aim_file_name)],range(num_labels_train))[0]
                     valid_loss,pred = valid(x_batch,y_batch)
-                    # pred = predict_valid(x_batch)[0]
                     acc += np.count_nonzero(np.int32(pred ==np.argmax(y_batch,axis=1)))
                 acc=float(acc)/(valid_batch_number*BATCHSIZE)
                 print 'iter:', i,idx_batch, '| Vloss:',valid_loss,'|Acc:',acc
@@ -188,14 +165,14 @@ def main():
                     print 'new valid_best:',valid_best,'-->',acc
                     valid_best=acc
                     all_params = helper.get_all_param_values(output_layer)
-                    f = gzip.open('speech_params/validbest_cnn_allbatchnorm_{}_{}_{}.pklz'.format(i,valid_best,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+                    f = gzip.open('speech_params/validbest_cnn_fisher_{}_{}_{}.pklz'.format(i,valid_best,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
                     pickle.dump(all_params, f)
                     f.close()
 
         # save weights
-        if i%5:
+        if i%1==0:
             all_params = helper.get_all_param_values(output_layer)
-            f = gzip.open('speech_params/validbest_cnn_allbatchnorm_{}_{}_{}.pklz'.format(i,acc,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('speech_params/validbest_cnn_fisher_{}_{}_{}.pklz'.format(i,acc,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
