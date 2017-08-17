@@ -23,6 +23,12 @@ train_load_path='/media/sw/Elements/fisher_dataset/train_pix40/' #
 # test_load_path='/home/shijing/data/fisher/test_pix40/' #665个类别
 train_files=os.listdir(train_load_path)
 # test_files=os.listdir(test_load_path)
+if 1:
+    st= 'standard_cnn_labels.out'
+    load_st= pickle.load(open(st))
+    assert len(train_files)==len(load_st)
+    print 'load standard labels list:',st
+    train_files=load_st
 print train_files
 # raise EOFError
 BATCHSIZE = 32
@@ -67,20 +73,20 @@ def lasagne_model():
     l_conv1b = Conv2DLayer(l_conv1, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
     l_conv1b = batch_norm(l_conv1b)
     l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=(2,2))
-    l_pool1 = DropoutLayer(l_pool1, p=0.2)
+    # l_pool1 = DropoutLayer(l_pool1, p=0.2)
 
     l_conv2 = Conv2DLayer(l_pool1, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
     l_conv2b = Conv2DLayer(l_conv2, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
     l_conv2b = batch_norm(l_conv2b)
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
-    l_pool2 = DropoutLayer(l_pool2, p=0.2)
+    # l_pool2 = DropoutLayer(l_pool2, p=0.2)
 
     l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=tanh)
     l_hidden3 = batch_norm(l_hidden3)
-    l_hidden3 = DropoutLayer(l_hidden3, p=0.3)
+    # l_hidden3 = DropoutLayer(l_hidden3, p=0.3)
 
     l_hidden4 = DenseLayer(l_hidden3, num_units = h_dimension, nonlinearity=tanh)
-    l_hidden4 = DropoutLayer(l_hidden4, p=0.5)
+    # l_hidden4 = DropoutLayer(l_hidden4, p=0.5)
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels_train, nonlinearity=softmax)
 
@@ -124,10 +130,11 @@ def main():
     valid_acc = []
 
     if 1:
-        pre_params = 'speech_params/validbest_cnn_spkall_22_0.95458984375_2017-06-24 00:50:39.pklz'
+        # pre_params = 'speech_params/validbest_cnn_spkall_22_0.95458984375_2017-06-24 00:50:39.pklz'
+        pre_params='speech_params/validbest_cnn_fisher_0_idxbatch20000_0.65625_2017-08-17 16:14:04.pklz' # 1 shot: 99.0 2000多次
         load_params = pickle.load(gzip.open(pre_params))
-        load_params=load_params[:-2]
-        lasagne.layers.set_all_param_values(hidden_layer,load_params)
+        # load_params=load_params[:-2]
+        lasagne.layers.set_all_param_values(output_layer,load_params)
         print 'load params: ', pre_params,'\n'
 
     for i in range(450):
