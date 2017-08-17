@@ -84,7 +84,7 @@ def lasagne_model():
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels_train, nonlinearity=softmax)
 
-    return l_out
+    return l_out,l_hidden4
 
 def main():
     # load the training and validation data sets
@@ -95,7 +95,7 @@ def main():
     Y = T.matrix()
 
     # set up theano functions to generate output by feeding data through network
-    output_layer = lasagne_model()
+    output_layer,hidden_layer = lasagne_model()
     output_train = lasagne.layers.get_output(output_layer, X)
     output_valid = lasagne.layers.get_output(output_layer, X, deterministic=True)
 
@@ -109,6 +109,7 @@ def main():
 
     # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = lasagne.layers.get_all_params(output_layer,trainable=True)
+    print params
     updates = nesterov_momentum(loss_train, params, learning_rate=0.2, momentum=0.9)
     # updates =lasagne.updates.sgd(loss_train, params, learning_rate=0.01)
 
@@ -121,6 +122,13 @@ def main():
     train_eval = []
     valid_eval = []
     valid_acc = []
+
+    if 1:
+        pre_params = 'speech_params/validbest_cnn_spkall_22_0.95458984375_2017-06-24 00:50:39.pklz'
+        load_params = pickle.load(gzip.open(pre_params))
+        load_params=load_params[:-2]
+        lasagne.layers.set_all_param_values(hidden_layer,load_params)
+        print 'load params: ', pre_params,'\n'
 
     for i in range(450):
         train_list,valid_list=get_data(train_files,num_speechs,size,valid_size)
@@ -177,7 +185,7 @@ def main():
                     pickle.dump(all_params, f)
                     f.close()
 
-            if idx_batch%3000==0:
+            if idx_batch%3000==0 and idx_batch>0:
                 all_params = helper.get_all_param_values(output_layer)
                 f = gzip.open('speech_params/validbest_cnn_fisher_{}_idxbatch{}_{}.pklz'.format(i,idx_batch,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
                 pickle.dump(all_params, f)
