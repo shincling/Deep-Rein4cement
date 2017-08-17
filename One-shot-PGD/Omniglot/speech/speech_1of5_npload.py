@@ -50,7 +50,7 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
     final_y=np.zeros((total_roads,path_length))
     labels=data
     # print labels
-    for one_sample in range(total_roads):
+    for one_sample in tqdm(range(total_roads)):
         label_list=random.sample(labels,total_label)
         # print 'label list:',label_list
         one_shoot_label=label_list[-1]
@@ -94,16 +94,30 @@ h_dimension=300
 
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
-total_roads=2000
+total_roads=1000
 total_roads_test=total_roads
-total_roads_test=100
+total_roads_test=1000
 number_shots_total=1#这个量用来约束到底是几shot
+#注意用这个的时候，主程序的n_classes改成5（非必须，但更好） 和 path_length要改成6（必须）
 
-
-x_train,y_train=get_sequence_speechs(train_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads,path=train_load_path)
-x_test,y_test=get_sequence_speechs(test_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=test_load_path)
-y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+load_data=1
+# load_data=0
+if load_data:
+    print 'Beginto load dataset.'
+    tt=time.time()
+    x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way1shot_train1000test1000.pklz'))
+    print 'load dataset finished , cost :',time.time()-tt
+    del tt
+else:
+    x_train,y_train=get_sequence_speechs(train_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads,path=train_load_path)
+    x_test,y_test=get_sequence_speechs(test_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=test_load_path)
+    y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+    y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+    if 1:
+        f = gzip.open('dataset/speech_1of5_{}way{}shot_train{}test{}.pklz'.format(total_labels_per_seq,number_shots_total,total_roads,total_roads_test), 'wb')
+        pickle.dump([x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle], f)
+        f.close()
 
 print y_test[:10]
 print y_test_shuffle[:10]
+print 'Data Finished.',number_shots_total
