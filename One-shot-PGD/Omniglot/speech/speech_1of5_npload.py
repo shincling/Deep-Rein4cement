@@ -17,6 +17,18 @@ from sklearn.preprocessing import LabelBinarizer,label_binarize
 from tqdm import tqdm
 import os
 
+def shuffle_label(y,counts):
+    for i in y:
+        uni_labes=list(set(list(i)))
+        # random_labels=random.sample(range(5),counts)
+        random_labels=random.sample(range(total_labels_per_seq),counts)
+        for idx,j in enumerate(i):
+            for ind in range(counts):
+                if j==uni_labes[ind]:
+                    i[idx]=random_labels[ind]
+                    break
+    return y
+
 def get_data(train_files,total_num,size,valid_size):
     total_list=[]
     for file in train_files:
@@ -37,7 +49,7 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
     final_x=np.zeros((total_roads,path_length,size[0],size[1]))
     final_y=np.zeros((total_roads,path_length))
     labels=data
-    print labels
+    # print labels
     for one_sample in range(total_roads):
         label_list=random.sample(labels,total_label)
         # print 'label list:',label_list
@@ -67,7 +79,7 @@ test_load_path='/media/sw/Elements/fisher_dataset/test_pix40/' #
 
 train_files=os.listdir(train_load_path)
 test_files=os.listdir(test_load_path)
-print train_files
+# print train_files
 # raise EOFError
 BATCHSIZE = 32
 one_sample=np.load(train_load_path+train_files[0])[0]
@@ -82,15 +94,16 @@ h_dimension=300
 
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
-total_roads=20
+total_roads=2000
 total_roads_test=total_roads
-total_roads_test=10
-cnn_only=0
+total_roads_test=100
 number_shots_total=1#这个量用来约束到底是几shot
 
 
 x_train,y_train=get_sequence_speechs(train_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads,path=train_load_path)
-x_test,y_test=get_sequence_speechs(test_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=test_files)
-# y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
-# y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
+x_test,y_test=get_sequence_speechs(test_files,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=test_load_path)
+y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
+y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
 
+print y_test[:10]
+print y_test_shuffle[:10]
