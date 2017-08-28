@@ -55,6 +55,6 @@ for file in tqdm(train_files):
 del train_files
 
 test_save_path='/media/sw/Elements/fisher_dataset/test_matlab/' #
-test_files=os.listdir(test_load_path,0)
+test_files=os.listdir(test_load_path)
 for file in tqdm(test_files):
-    file2mat(file,num_channels)
+    file2mat(file,num_channels,0)
