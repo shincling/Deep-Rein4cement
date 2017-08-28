@@ -47,13 +47,21 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
         label_list=random.sample(labels,total_label)
         # print 'label list:',label_list
         one_shoot_label=label_list[-1]
-        final_x[one_sample,-1]=random.sample(global_data[one_shoot_label],1)[0]
+        one_shot_list=global_data[one_shoot_label].copy()
+        onnn=random.sample(global_data[one_shoot_label],1)[0]
+        # final_x[one_sample,-1]=random.sample(global_data[one_shoot_label],1)[0]
+        final_x[one_sample,-1]=onnn
         final_y[one_sample,-1]=data.index(one_shoot_label)
+        itemidx=np.where(one_shot_list==onnn)[0][0]
+        one_shot_list=np.delete(one_shot_list,itemidx,0)
         for i in range(path_length-1):
             label=label_list[i]
             final_y[one_sample,i]=data.index(label)
             tmp_sum=0
-            tmp_sample=random.sample(global_data[label],number_shots_total)
+            if label!=one_shoot_label:
+                tmp_sample=random.sample(global_data[label],number_shots_total)
+            else:
+                tmp_sample=random.sample(one_shot_list,number_shots_total)
             for iidx,shot in enumerate(tmp_sample):
                 tmp_sum+=shot
             tmp_sum/=float(number_shots_total)
@@ -66,6 +74,11 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
 aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_100_665_41.mat')
 print type(aa)
 data=aa['testIVs']
+
+# aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_back.mat')
+# data=aa['finalTestIVs']
+#
+# data=np.random.random([100,665,41])
 del aa
 data=data.reshape(100,-1).transpose().reshape(665,-1,100,1) #665*41*100的聚脏嗯个
 global_data=data
@@ -78,8 +91,8 @@ total_labels_per_seq=5
 path_length=total_labels_per_seq+1
 total_roads=1000
 total_roads_test=total_roads
-total_roads_test=1000
-number_shots_total=1#这个量用来约束到底是几shot
+total_roads_test=5000
+number_shots_total=40#这个量用来约束到底是几shot
 #注意用这个的时候，主程序的n_classes改成5（非必须，但更好） 和 path_length要改成6（必须）
 
 load_data=0
