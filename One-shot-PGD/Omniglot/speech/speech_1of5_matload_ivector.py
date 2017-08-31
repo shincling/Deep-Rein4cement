@@ -71,12 +71,14 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
 
 
 
-aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_100_665_41.mat')
+# aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_100_665_41.mat')
+aa=sio.loadmat('testIvs4096_100_665_41.mat')
 print type(aa)
 data=aa['testIVs']
 
-# aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_back.mat')
-# data=aa['finalTestIVs']
+aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_back.mat')
+aa=sio.loadmat('testIvs4096_back.mat')
+data=aa['finalTestIVs']
 #
 # data=np.random.random([100,665,41])
 del aa
@@ -91,8 +93,8 @@ total_labels_per_seq=5
 path_length=total_labels_per_seq+1
 total_roads=1000
 total_roads_test=total_roads
-total_roads_test=5000
-number_shots_total=40#这个量用来约束到底是几shot
+total_roads_test=10000
+number_shots_total=1#这个量用来约束到底是几shot
 #注意用这个的时候，主程序的n_classes改成5（非必须，但更好） 和 path_length要改成6（必须）
 
 load_data=0
