@@ -19,13 +19,13 @@ ttt.append([float(i) for i in re.findall('ttt3 is.* (.*)',f)])
 ttt.append([float(i) for i in re.findall('ttt4 is.* (.*)',f)])
 ttt.append([float(i) for i in re.findall('ttt5 is.* (.*)',f)])
 times=range(0,306,3)
-times=range(0,60,3)
+# times=range(0,60,3)
 
-tt=[]
-for i in ttt:
-    tt.append(i[:20])
-#
-ttt=tt
+# tt=[]
+# for i in ttt:
+#     tt.append(i[:20])
+
+# ttt=tt
 # textwindow = viz.text('Hello World!')
 
 win = viz.line(
@@ -34,7 +34,12 @@ win = viz.line(
     opts=dict(
         markersize=10,
         markers=1,
-        legend=['0-shot accuracy']
+        legend=['0-shot accuracy'],
+        ylabel='Percent Correct',
+        xlabel='Episode',
+        xtick=1,
+        ytick=1,
+        # xtype='log'
     )
 )
 viz.updateTrace(
@@ -42,12 +47,6 @@ viz.updateTrace(
     Y=np.array(ttt[1]),
     win=win,
     name='1-shot accuracy',
-    opts=dict(
-        markersize=10,
-        markers=1,
-        markersymbol='square',
-    )
-
 )
 viz.updateTrace(
     X=np.array(times),
