@@ -76,17 +76,17 @@ def get_features(path):
 
     (rate,sig)=wav.read(path)
     logfbank0015_feat=logfbank(sig,rate,winstep=0.015,nfilt=40)
-    feat_list=split_speech(logfbank0015_feat)
+    feat_list=split_speech(logfbank0015_feat,100)
     return label,feat_list
 
 load_data=None
 # load_data='dataset/spk1-15_dict_fbank40.pklz'
-load_data='dataset/spkall_dict_fbank40.pklz'
+# load_data='dataset/spkall_dict_fbank40.pklz'
 
 total_labels_per_seq=5
 path_length=total_labels_per_seq+1
 total_roads=200
-total_roads_test=20
+total_roads_test=200
 cnn_only=0
 test_split=1#意思是要不要从spkall里面分出来部分作为one-shot的test样本
 label_fixed=1
@@ -99,7 +99,7 @@ if load_data:
     print 'load cost time:',time.time()-timell
 else:
     path='/home/sw/Shin/数据集/多说话人语音数据 - WSJ0/spk1-15'
-    path='/home/sw/Shin/数据集/多说话人语音数据 - WSJ0/spk_all_wav'
+    # path='/home/sw/Shin/数据集/多说话人语音数据 - WSJ0/spk_all_wav'
     pathdir=os.listdir(path)
     files=[path+'/'+ff for ff in pathdir]
     labels=get_labels(pathdir)
@@ -121,7 +121,7 @@ print 'data finished.'
 if test_split:
     print 'Test split from spkall start............'
     total_labels_num=len(data_dict)
-    test_labels_num=total_labels_num/10
+    test_labels_num=total_labels_num/10 if total_labels_num/10>5 else 5
     print 'total_labes_num:',total_labels_num,'test_labes_num:',test_labels_num
     test_labels=data_dict.keys()[(-1*test_labels_num):]
     data_dict_test={ll:data_dict[ll] for ll in test_labels}
