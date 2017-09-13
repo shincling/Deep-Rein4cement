@@ -97,7 +97,7 @@ path_length=total_labels_per_seq+1
 total_roads=1000
 total_roads_test=total_roads
 total_roads_test=1000
-number_shots_total=1#这个量用来约束到底是几shot
+number_shots_total=5#这个量用来约束到底是几shot
 #注意用这个的时候，主程序的n_classes改成5（非必须，但更好） 和 path_length要改成6（必须）
 
 load_data=1
@@ -105,7 +105,8 @@ load_data=1
 if load_data:
     print 'Beginto load dataset.'
     tt=time.time()
-    x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way1shot_train1000test1000.pklz'))
+    # x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way1shot_train1000test1000.pklz'))
+    x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way5shot_train1000test1000.pklz'))
     print 'load dataset finished , cost :',time.time()-tt
     del tt
 else:
