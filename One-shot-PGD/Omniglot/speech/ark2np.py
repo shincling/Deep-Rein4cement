@@ -9,7 +9,7 @@ import numpy as np
 def read_utt_data(ark_path_offset):
     ark_path, offset = ark_path_offset.split(':')
     offset = int(offset)
-    return _read_utt_data(ark_path, offset)
+    return _read_utt_data(ark_path, offset)[:,:40]
 
 
 def _readtoken(ark_read):
@@ -98,7 +98,6 @@ def _read_utt_data(ark_path, offset):
         raise e
         # traceback.print_exc()
         # print 'Open Fea File Failed ', self.scp_data[index][0]
-
     return None
 
 
