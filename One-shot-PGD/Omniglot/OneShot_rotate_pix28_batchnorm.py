@@ -9,7 +9,9 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image_all_1of5 as image_all
+from lasagne.layers import batch_norm
+# import image_all_1of5_allall as image_all
+import image_allall_rotate as image_all
 from tqdm import tqdm
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
@@ -99,18 +101,33 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
         # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        #数据预处理和归一化的方法
+
+        # inputs[0]=inputs[0]/(T.sqrt(T.sum(T.square(inputs[0]),axis=2)).reshape([self.batch_size,self.max_sentlen,1]).repeat(self.embedding_size,2))-1
+        # inputs[1]=inputs[1]/(T.sqrt(T.sum(T.square(inputs[1]),axis=2)).reshape([self.batch_size,1,1]).repeat(self.embedding_size,2))-1
+
+        # aver0=T.mean(inputs[0],-1).reshape([self.batch_size,self.max_sentlen,1]).repeat(self.embedding_size,2)
+        # var0=T.sqrt(T.var(inputs[0],-1)).reshape([self.batch_size,self.max_sentlen,1]).repeat(self.embedding_size,2)
+        # inputs[0]=(inputs[0]-aver0)/var0
+        # aver1=T.mean(inputs[1],-1).reshape([self.batch_size,1,1]).repeat(self.embedding_size,2)
+        # var1=T.sqrt(T.var(inputs[1],-1)).reshape([self.batch_size,1,1]).repeat(self.embedding_size,2)
+        # inputs[1]=(inputs[1]-aver1)/var1
+
 
         #正常的点积的方法
         # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # print 'metric:dot'
 
         #正常的点积的方法
         # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         # norm1=T.sqrt(T.sum(T.square(inputs[0]),axis=2))+1e-15
         # norm2=T.sqrt(T.sum(T.square(inputs[1]),axis=2))
-        # activation2=activation2/(norm1+norm2)
+        # activation2=activation2/(norm1*norm2)
+        # print 'metric:cos'
 
         # 采用欧式距离的相反数的评价的话：
         activation2=-T.sqrt(T.sum(T.square(T.sub(inputs[0],inputs[1].repeat(self.max_sentlen,1))),axis=2)+1e-15)
+        print 'metric:distance'
 
 
 
@@ -220,10 +237,12 @@ class Model:
         # l_range_flatten = lasagne.layers.NonlinearityLayer(l_range_flatten,nonlinearity=lasagne.nonlinearities.tanh)
         l_range_conv1=lasagne.layers.Conv2DLayer(l_range_flatten,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_range_conv1=lasagne.layers.Conv2DLayer(l_range_conv1,num_filters=128,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv1=batch_norm(l_range_conv1)
         l_pool1=lasagne.layers.MaxPool2DLayer(l_range_conv1,pool_size=(2,2))
         l_dropout1=lasagne.layers.DropoutLayer(l_pool1,p=0.2)
         l_range_conv2=lasagne.layers.Conv2DLayer(l_pool1,num_filters=256,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
         l_range_conv2=lasagne.layers.Conv2DLayer(l_range_conv2,num_filters=256,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.rectify)
+        l_range_conv2=batch_norm(l_range_conv2)
         l_pool2=lasagne.layers.MaxPool2DLayer(l_range_conv2,pool_size=(2,2))
         l_dropout2=lasagne.layers.DropoutLayer(l_pool2,p=0.2)
 
@@ -245,6 +264,7 @@ class Model:
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
         # TODO:这里的层是不是有点多了？
+        l_range_dense2=batch_norm(l_range_dense2)
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,tmp_h_dim])
@@ -403,10 +423,11 @@ class Model:
         return action,new_memory_state,reward,new_memory_label
 
     def test_acc(self,xx,yy):
-        if len(xx)>2000:
-            xx,yy=xx[:2000],yy[:2000]
+        # if len(xx)>2000:
+        #     xx,yy=xx[:2000],yy[:2000]
         batch_size,path_length,n_classes=self.batch_size,self.path_length,self.n_classes
         x_dim,h_dim=self.x_dim,self.h_dim
+        acc0,ttt0=0.,0.
         acc,ttt=0.,0.
         acc2,ttt2=0.,0.
         acc3,ttt3=0.,0.
@@ -479,6 +500,10 @@ class Model:
                 for jdx,jj in enumerate(line):
                     if jj not in dict:#第一次见到
                         dict[jj]=1
+                        if jdx!=0:
+                            ttt0+=1
+                            if total_action[idx,jdx] not in yy_batch[idx,:jdx]:
+                                acc0+=1
                     else:
                         if dict[jj]==1:#第二次见到
                             ttt+=1
@@ -508,6 +533,7 @@ class Model:
                 # print 'acc:',acc,'ttt:',ttt
 
         try:
+            print 'average ttt0 is :',float(ttt0)/(batch_size*batch_total_number),acc0/ttt0
             print 'average ttt is :',float(ttt)/(batch_size*batch_total_number)
             print 'average ttt2 is :',float(ttt2)/(batch_size*batch_total_number),acc2/ttt2
             print 'average ttt3 is :',float(ttt3)/(batch_size*batch_total_number),acc3/ttt3
@@ -527,7 +553,7 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
-        total_test=1000
+        total_test=10000
         if 1:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
@@ -562,7 +588,55 @@ class Model:
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0527420222348_last2_cnn_rotate_1_triplet_2017-07-20 21:44:50.pklz'))
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0300597981757_last2_cnn_rotate_1_triplet_2017-07-22 13:38:52.pklz'))
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0305093006622_last2_cnn_rotate_1_triplet_2017-07-22 22:14:53.pklz'))
-            prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0347265254941_paramsall_1_triplet_2017-06-02 19:55:58.pklz'))
+
+            #这下面的都是batchnorm版本的参数
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_batchnorm_0_0.9434375_2017-07-24 10:19:33.pklz'))#cos是93.4左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_batchnorm_0_0.96578125_2017-07-24 11:07:25.pklz'))#cos是95.56左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_batchnorm_0_0.97296875_2017-07-24 11:22:22.pklz'))#cos是94.3左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_batchnorm_0_0.9740625_2017-07-24 11:45:25.pklz'))#cos是94.5左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_cnn_pix28_tanhbatchnorm_0_0.915625_2017-07-29 23:36:11.pklz'))#正太加cos是1shot98左右,5shot 97不到
+            # batchnorm+triplet之后：
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00937674000462_batchnorm_last1_cnn_rotate_1_triplet_2017-07-24 14:39:54.pklz'))# 这套参数测过，很一般
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00839128953114_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 18:26:28.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00950340094602_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 20:48:45.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0256673505007_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-25 23:05:04.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0212742781895_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-25 16:21:20.pklz'))# dis的话：1-shot是96.8左右，5 shot是94.5左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0202112830048_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 07:49:41.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0198791890612_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 11:08:28.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0181135906469_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 15:40:51.pklz'))# dis的话：1-shot是98.3左右，5 shot是左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0138670499695_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-26 20:01:10.pklz'))# dis的话：1-shot是98.2左右，5 shot是97.8左右？？？？
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0128350807869_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 00:27:48.pklz'))# dis的话：1-shot是97.8左右，5 shot是97.9左右(8000大样本测试过）
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00998999571871_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 10:09:26.pklz'))# dis的话：1-shot是98.15左右，5 shot是97.5左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00967824300506_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 11:03:46.pklz'))# dis的话：1-shot是左右98.75,97.7也来了，5 shot是98.0左右(5000大洋本验证）
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00910432935443_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 12:54:42.pklz'))# dis的话：1-shot是98.5左右，5 shot是97.8左右(4000大样本）
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00900004222998_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 19:20:09.pklz'))# dis的话：1-shot是98.7左右，5 shot是97.8左右
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00722764001433_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-27 21:36:33.pklz'))# dis的话：1-shot是98.6左右，5 3shot 97.9,5shot是98.5左右,20way1shot施94点多（大样本)
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0065082727313_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-28 06:14:57.pklz'))#
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00677979987298_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-28 09:55:28.pklz'))#
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00506214919041_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-28 23:18:38.pklz'))#
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.00465089692497_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-30 18:28:05.pklz'))#
+            # ppparmas='params/cnn_28/weights_0.00465089692497_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-30 18:28:05.pklz'
+            # ppparmas='params/cnn_28/weights_0.00465089692497_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-30 18:28:05.pklz'
+            # ppparmas='params/cnn_28/weights_cnn_pix28_tanhbatchnorm_31_0.91265625_2017-07-30 17:25:53.pklz'
+            # ppparmas='params/cnn_28/weights_0.00309908878308_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-31 01:24:14.pklz'
+            ppparmas='params/cnn_28/weights_0.00200201831744_batchnorm_12345aver_0.5_triplet_2017-08-02 03:17:35.pklz' # 正太＋dis,5-shot :98.8 (1500)
+            ppparmas='params/cnn_28/weights_0.00258958144627_batchnorm_12345aver_0.5_triplet_2017-08-02 09:35:44.pklz' # 正太＋dis,5-shot :98.8 (1500)
+            ppparmas='params/cnn_28/weights_0.00252435977563_batchnorm_12345aver_0.5_triplet_2017-08-02 11:57:28.pklz' # 正太＋dis,5-shot :99.1 , 1-shot:98.8 (300大样本）
+            ppparmas='params/cnn_28/weights_0.00222409049717_batchnorm_12345aver_0.5_triplet_2017-08-02 16:40:36.pklz' # 正太＋dis,5-shot :99.4 , 1-shot:98.8 (300大样本）
+            ppparmas='params/cnn_28/weights_0.00172097989559_batchnorm_12345aver_0.5_triplet_2017-08-02 18:17:20.pklz' # 正太＋dis,5-shot :99.4 , 1-shot:98.8 (300大样本）
+            ppparmas='params/cnn_28/weights_0.00142640337693_batchnorm_12345aver_0.5_triplet_2017-08-03 09:40:40.pklz' # 正太＋dis,5-shot :,1 shot : 98.7(1000)
+            # ppparmas='params/cnn_28/weights_0.000948838323278_batchnorm_12345aver_0.5_triplet_2017-08-04 00:49:00.pklz' # 正太＋dis,5-shot :,1 shot : 98.7(1000)
+            # ppparmas='params/cnn_28/weights_0.000598116099645_batchnorm_12345aver_0.5_triplet_2017-08-04 23:48:42.pklz' # 不是很好。
+            # ppparmas='params/cnn_28/weights_0.000729210268372_batchnorm_12345aver_0.5_triplet_2017-08-06 11:31:03.pklz' #1shot 98.5
+            # ppparmas='params/cnn_28/weights_0.000611180910132_batchnorm_12345aver_0.5_triplet_2017-08-07 10:14:34.pklz' # 正太＋dis,5-shot :,1 shot : 98.7(1000)
+            # ppparmas='params/cnn_28/weights_0.000785363775556_batchnorm_12345aver_0.5_triplet_2017-08-07 13:43:52.pklz' # 1 shot:99.2(600),5 shot:99.7(300)
+            ppparmas='params/cnn_28/weights_0.000715472522347_batchnorm_12345aver_0.5_triplet_2017-08-08 05:08:47.pklz' # 1 shot:99.2(600),5 shot:99.7(300)
+            ppparmas='params/cnn_28/weights_0.000572063863097_batchnorm_12345aver_0.5_triplet_2017-08-09 02:26:27.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='params/cnn_28/weights_0.000390200581284_batchnorm_12345aver_0.5_triplet_2017-08-15 16:51:48.pklz' # 1 shot: 98.7  5：99.6 （16000）
+            ppparmas='params/cnn_28/weights_0.00148000554696_batchnorm_12345aver_0.5_triplet_2017-06-28 13:54:35.pklz' # 1 shot: 98.7  5：99.6 （16000）
+            print ppparmas
+            prev_weights_stable=pickle.load(gzip.open(ppparmas))#
+
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
@@ -823,10 +897,10 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(28,28), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=300, help='Dimension#')
     parser.add_argument('--tmp_h_dim', type=int, default=300, help='tmp_h_Dimension#')
-    parser.add_argument('--n_classes', type=int, default=5, help='Task#')
+    parser.add_argument('--n_classes', type=int, default=10, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
-    parser.add_argument('--path_length', type=int, default=6, help='Task#')
+    parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')

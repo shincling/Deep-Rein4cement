@@ -19,13 +19,20 @@ def action_to_vector_real(x, n_classes): #x是bs*path_length
             result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
     return np.int32(result)
 
-def action_to_vector(x, n_classes,p=0): #x是bs*path_length
+def action_to_vector(x, n_classes,p=1): #x是bs*path_length
     # p=0 #p是标签正常的概率
+    # result = np.zeros([x.shape[0], x.shape[1], n_classes])
+    # for i in range(x.shape[0]):
+    #     for j in range(x.shape[1]):
+    #         if np.random.rand()<p and j!=x.shape[1]-1:
+    #             result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+
     result = np.zeros([x.shape[0], x.shape[1], n_classes])
     for i in range(x.shape[0]):
         for j in range(x.shape[1]):
-            if np.random.rand()<p and j!=x.shape[1]-1:
+            if np.random.rand()<p:
                 result[i,j]=label_binarize([int(x[i,j])],range(n_classes))[0]
+    result= result+1
     return np.int32(result)
 
 def reward_count(total_reward, length, discout=0.99):
@@ -169,8 +176,9 @@ class ContChoiceLayer(lasagne.layers.MergeLayer):
         beta=lasagne.nonlinearities.softmax(activation) #(BS,max_sentlen)
 
         alpha=lasagne.nonlinearities.softmax(alpha+5*beta)
-
+        return beta
         return alpha
+
 class Model:
     def __init__(self,x_dimension=(20,20),h_dimension=30,tmp_h_dim=300,n_classes=10,batch_size=32,n_epoch=50,path_length=10,
                  n_paths=1000,max_norm=50,lr=0.05,discount=0.99,update_method='sgd',std=0.5,save_path=str(np.random.randint(100,999)),**kwargs):

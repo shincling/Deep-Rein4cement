@@ -9,7 +9,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image_all_1200 as image_all
+import image_all_1of5_allall as image_all
 from tqdm import tqdm
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
@@ -527,6 +527,7 @@ class Model:
         n_classes=self.n_classes
         save_path=self.save_path
         total_test=1000
+        total_test=1000
         if 1:
             pre_finished=1
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
@@ -552,7 +553,17 @@ class Model:
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0297732540409_cnn_rotate_1_triplet_2017-05-25 14:12:13.pklz'))
 
             #1200 28*28的 valid_best
-            prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_0_0.8521875_2017-05-29 04:40:07.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_0_0.8521875_2017-05-29 04:40:07.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/validbest_pix28_1_0.90078125_2017-05-29 07:03:57.pklz'))
+
+            # 28×28目前最佳的
+            prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.123253030458_cnn_rotate_5_triplet_2017-05-29 20:31:01.pklz'))
+
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0527420222348_last2_cnn_rotate_1_triplet_2017-07-20 21:44:50.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0300597981757_last2_cnn_rotate_1_triplet_2017-07-22 13:38:52.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0305093006622_last2_cnn_rotate_1_triplet_2017-07-22 22:14:53.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0347265254941_paramsall_1_triplet_2017-06-02 19:55:58.pklz'))#79.多才，更新整个看起来是个失败
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_28/weights_0.0291595729007_paramsall_1_triplet_2017-06-03 04:00:47.pklz'))#79.多才，更新整个看起来是个失败
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
@@ -813,10 +824,10 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=tuple, default=(28,28), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=300, help='Dimension#')
     parser.add_argument('--tmp_h_dim', type=int, default=300, help='tmp_h_Dimension#')
-    parser.add_argument('--n_classes', type=int, default=10, help='Task#')
+    parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
-    parser.add_argument('--path_length', type=int, default=11, help='Task#')
+    parser.add_argument('--path_length', type=int, default=6, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')

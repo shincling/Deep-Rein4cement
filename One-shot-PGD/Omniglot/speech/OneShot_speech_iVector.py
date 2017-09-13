@@ -235,6 +235,7 @@ class Model:
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
         l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in, [self.batch_size * self.path_length, 1, self.x_dim[0],self.x_dim[1]])
         l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
 
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
 
@@ -253,7 +254,7 @@ class Model:
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range,l_range_label:x_label})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
-        # params=[]#相当于只更新最后一个参数，别的不参与更新了
+        params=[]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
             x_label:self.x_range_label,
@@ -280,8 +281,8 @@ class Model:
 
         now_memory_label_count=np.int32(now_memory_label!=-1).sum(axis=1)#计算当前memory每个slot各有多少个数据存储
         action=np.random.choice(range(self.n_classes),p=prob)
-        if idx_path_length<path_length-1:
-            action = int(yy_truth)
+        # if idx_path_length<path_length-1:
+        #     action = int(yy_truth)
         index_to_insert=int(np.argwhere(now_memory_label[action]==-1)[0])
         #定义reward
         if now_memory_label[action][0]==-1:#证明是新开的一个slot
@@ -674,7 +675,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=6, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.1, help='Task#')
+    parser.add_argument('--lr', type=float, default=5, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')

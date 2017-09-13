@@ -134,7 +134,7 @@ size=(20,20)
 total_labels_per_seq=5
 path_length=11
 total_roads=2000
-cnn_only=0
+cnn_only=1
 label_fixed=1
 if cnn_only:
     ddd=build_rotations(path,pathdir,files,labels,all_count,size)

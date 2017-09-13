@@ -84,7 +84,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # self.W_h=self.add_param(W_choice,(embedding_size,1), name='Pointer_layer_W_h')
         # self.b_h=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         # self.W_q=self.add_param(W_question,(embedding_size,1), name='Pointer_layer_W_q')
-        # self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
+        self.W_o=self.add_param(W_out,(embedding_size,embedding_size), name='Pointer_layer_W_o')
         # self.ratio=self.add_param(W_choice,(1,1), name='Pointer_layer_W_b')
         self.nonlinearity=nonlinearity
         # zero_vec_tensor = T.vector()
@@ -97,8 +97,8 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         #input[0]:(BS,max_senlen,emb_size),input[1]:(BS,1,emb_size),input[2]:(BS,max_sentlen)
         # activation0=(T.dot(inputs[0],self.W_h)).reshape([self.batch_size,self.max_sentlen])+self.b_h.repeat(self.batch_size,0).repeat(self.max_sentlen,1)
         # activation1=T.dot(inputs[1],self.W_q).reshape([self.batch_size]).dimshuffle(0,'x')
-        # activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
-        activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        activation2=T.batched_dot(T.dot(inputs[0],self.W_o),inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
+        # activation2=T.batched_dot(inputs[0],inputs[1].reshape([self.batch_size,self.embedding_size,1])).reshape([self.batch_size,self.max_sentlen])
         # norm2=T.sqrt(T.sum(T.mul(inputs[0],inputs[0]),axis=2))+0.0000001
         # activation2=activation2/norm2
         # activation=(self.nonlinearity(activation0)+self.nonlinearity(activation1)+activation2).reshape([self.batch_size,self.max_sentlen])#.dimshuffle(0,'x',2)#.repeat(self.max_sentlen,axis=1)
@@ -304,8 +304,8 @@ class Model:
         hidden = lasagne.layers.helper.get_output(l_range_dense2_origin, {l_range_in: x_range,l_range_label:x_label})
         probas_range = lasagne.layers.helper.get_output(l_range_mu, {l_range_in: x_range,l_range_memory_in:x_memory,l_range_label:x_label})
         params=lasagne.layers.helper.get_all_params(l_range_mu,trainable=True)
-        # params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
-        params=[]#相当于只更新最后一个参数，别的不参与更新了
+        params=params[-1:]#相当于只更新最后一个参数，别的不参与更新了
+        # params=[]#相当于只更新最后一个参数，别的不参与更新了
         givens = {
             x_range: self.x_range_shared,
             x_label:self.x_range_label,
@@ -699,7 +699,8 @@ class Model:
                         fre=repeat_time%output_fre
                     except:
                         fre=0
-                    if 1 or output_label=='1' and fre==0:
+                    # if 1 or output_label=='1' and fre==0:
+                    if output_label=='1' and fre==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -777,7 +778,7 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.2, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.00002, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')

@@ -58,7 +58,7 @@ def lasagne_model():
 
     l_out = DenseLayer(l_hidden4, num_units=num_labels, nonlinearity=softmax)
 
-    return l_out
+    return l_out,l_hidden4
 
 def main():
     # load the training and validation data sets
@@ -95,7 +95,7 @@ def main():
     Y = T.matrix()
 
     # set up theano functions to generate output by feeding data through network
-    output_layer = lasagne_model()
+    output_layer,hidden_layer = lasagne_model()
     output_train = lasagne.layers.get_output(output_layer, X)
     output_valid = lasagne.layers.get_output(output_layer, X, deterministic=True)
 
@@ -118,10 +118,12 @@ def main():
     predict_valid = theano.function(inputs=[X], outputs=[pred_valid], allow_input_downcast=True)
 
     # loop over training functions for however many iterations, print information while training
-    if 0:
-        load_params = pickle.load(gzip.open('params/cnn_28/weights_cnn_pix28_tanhbatchnorm_6_0.893125_2017-07-29 17:28:20.pklz'))
+    if 1:
         # load_params=pickle.load(gzip.open('params/cnn_rare/weights_cnn_rare_nomm_31_0.36171875_2017-05-20 09:11:59.pklz'))
-        lasagne.layers.set_all_param_values(output_layer, load_params)
+        ppparmas='params/cnn_28/weights_0.000572063863097_batchnorm_12345aver_0.5_triplet_2017-08-09 02:26:27.pklz' # 1 shot: 99.0 2000多次
+        print ppparmas
+        load_params = pickle.load(gzip.open(ppparmas))
+        lasagne.layers.set_all_param_values(hidden_layer, load_params)
         print 'load params succeed!'
 
     train_eval = []

@@ -141,7 +141,7 @@ size=(20,20)
 size=(28,28)
 total_labels_per_seq=5
 path_length=11
-total_roads=2000
+total_roads=200
 cnn_only=0
 label_fixed=1
 if cnn_only:

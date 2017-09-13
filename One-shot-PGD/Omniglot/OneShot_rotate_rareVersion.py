@@ -9,7 +9,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image_all_1200 as image_all
+import image_all_1of5 as image_all
 from tqdm import tqdm
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
@@ -245,8 +245,11 @@ class Model:
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.h_dim,W=D2,nonlinearity=lasagne.nonlinearities.tanh) #[bs*path_length,dimension]
         # l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.h_dim])
+
         # TODO:这里的层是不是有点多了？
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        # 去掉了一层
+        #l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+
         # l_range_dense2=lasagne.layers.DropoutLayer(l_range_dense2,p=0.5)
         # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,tmp_h_dim,W=D2,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
         l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,tmp_h_dim])
@@ -541,7 +544,15 @@ class Model:
             # prev_weights_stable=pickle.load(gzip.open('params/weights_1200_perfect_7.pklz'))
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_triplet_1200_0.1432.pklz'))
             # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_triplet_1200_0.1234.pklz'))
-            prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_1200_valid0795.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_1200_valid0795.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare/weights_cnn_rare_8_0.94359375_2017-05-21 08:21:08.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare/validbest_rare_0_0.85515625_2017-05-30 06:00:11.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare/validbest_rare_0_0.8890625_2017-05-30 07:23:22.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare_dense2/validbest_rare_0_0.9321875_2017-05-30 21:45:33.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare_dense2/raretriplet_0.337598619194_last1_cnn_rotate_alpha5_2017-05-31 03:20:36.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare_dense2/raretriplet_0.170219292857_last1_cnn_rotate_alpha5_2017-05-31 20:50:20.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_rare_dense2/raretriplet_1.18169014294_last1_cnn_rotate_alpha20_2017-06-01 06:14:15.pklz'))
+            prev_weights_stable=pickle.load(gzip.open('params/cnn_rare_dense2/raretriplet_1.02842039535_last1_cnn_rotate_alpha20_2017-06-02 02:29:37.pklz')) #91.6
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
@@ -798,13 +809,14 @@ if __name__=='__main__':
     if test_mode:
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
-        parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
+        # parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
+        parser.add_argument('--x_dimension', type=tuple, default=(28,28), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=256, help='Dimension#')
     parser.add_argument('--tmp_h_dim', type=int, default=256, help='tmp_h_Dimension#')
-    parser.add_argument('--n_classes', type=int, default=10, help='Task#')
+    parser.add_argument('--n_classes', type=int, default=5, help='Task#')
     parser.add_argument('--batch_size', type=int, default=32, help='Task#')
     parser.add_argument('--n_epoch', type=int, default=100, help='Task#')
-    parser.add_argument('--path_length', type=int, default=11, help='Task#')
+    parser.add_argument('--path_length', type=int, default=6, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
     parser.add_argument('--lr', type=float, default=0.00002, help='Task#')

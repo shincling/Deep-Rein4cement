@@ -9,7 +9,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
-import image_all
+import image_all_1200 as image_all
 from tqdm import tqdm
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
@@ -110,7 +110,7 @@ class ChoiceLayer(lasagne.layers.MergeLayer):
         # activation2=activation2/(norm1+norm2)
 
         # 采用欧式距离的相反数的评价的话：
-        activation2=-T.sqrt(T.sum(T.square(T.sub(inputs[0],inputs[1].repeat(self.max_sentlen,1))),axis=2))
+        activation2=-T.sqrt(T.sum(T.square(T.sub(inputs[0],inputs[1].repeat(self.max_sentlen,1))),axis=2)+1e-15)
 
 
 
@@ -532,7 +532,25 @@ class Model:
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.953024193548_1_10_2017-02-10 11:16:30'))
             # prev_weights_stable=pickle.load(open('params/params_nnn_0.95_re'))
             # prev_weights_stable=pickle.load(gzip.open('params/params_rotate_95.pklz'))
-            prev_weights_stable=pickle.load(gzip.open('params/params_rotate_triplet.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/params_rotate_triplet.pklz'))
+
+            # 1200版本的，还未加triplet
+            # prev_weights_stable=pickle.load(gzip.open('params/weights_1200_perfect.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/weights_1200_perfect_7.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_triplet_1200_0.1432.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_triplet_1200_0.1234.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_1200_valid0795.pklz'))
+
+            #　1200 valid_best的
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/validbest_0_0.90421875_2017-05-21 01:13:38.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/validbest_2_0.949375_2017-05-21 03:09:28.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0397784282249_cnn_rotate_1_triplet_2017-05-22 04:13:08.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0358228755117_cnn_rotate_1_triplet_2017-05-22 17:47:33.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0340624707658_cnn_rotate_1_triplet_2017-05-22 22:19:27.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0329940586727_cnn_rotate_1_triplet_2017-05-23 07:22:44.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.031799513899_cnn_rotate_1_triplet_2017-05-23 22:17:25.pklz'))
+            # prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.0297732540409_cnn_rotate_1_triplet_2017-05-25 14:12:13.pklz'))
+            prev_weights_stable=pickle.load(gzip.open('params/cnn_triplet/weights_0.258011473472_last1_cnn_rotate_aplha4_triplet_2017-07-21 10:25:33.pklz'))
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
@@ -718,7 +736,8 @@ class Model:
                     except:
                         fre=0
                     # if 1 or output_label=='1' and fre==0:
-                    if output_label=='1' and fre==0 and idx_batch==0:
+                    if output_label=='1' and fre==0 and idx_batch%5==0:
+                    # if output_label=='1' and fre==0 and idx_batch>50 and idx_batch%5==0:
                         # print 'Begin to test.'
                         # if pre_finished:
                         #     lasagne.layers.set_all_param_values(self.nnn, prev_weights_stable)
@@ -777,7 +796,8 @@ if_cont=0
 global hid,slice_label
 hid=1
 slice_label=1
-lll=964*4
+# lll=964*4
+lll=1200*4
 global same_batch
 # same_batch=32
 same_batch=0
@@ -788,6 +808,7 @@ if __name__=='__main__':
         parser.add_argument('--x_dimension', type=int, default=10, help='Dimension#')
     else:
         parser.add_argument('--x_dimension', type=tuple, default=(20,20), help='Dimension#')
+        # parser.add_argument('--x_dimension', type=tuple, default=(30,30), help='Dimension#')
     parser.add_argument('--h_dimension', type=int, default=300, help='Dimension#')
     parser.add_argument('--tmp_h_dim', type=int, default=300, help='tmp_h_Dimension#')
     parser.add_argument('--n_classes', type=int, default=10, help='Task#')
@@ -796,11 +817,11 @@ if __name__=='__main__':
     parser.add_argument('--path_length', type=int, default=11, help='Task#')
     parser.add_argument('--n_paths', type=int, default=30, help='Task#')
     parser.add_argument('--max_norm', type=float, default=50, help='Task#')
-    parser.add_argument('--lr', type=float, default=0.002, help='Task#')
+    parser.add_argument('--lr', type=float, default=0.0000005, help='Task#')
     parser.add_argument('--discount', type=float, default=0.999, help='Task#')
     parser.add_argument('--std', type=float, default=0.1, help='Task#')
     parser.add_argument('--update_method', type=str, default='rmsprop', help='Task#')
-    parser.add_argument('--save_path', type=str, default='re_sepTrain', help='Task#')
+    parser.add_argument('--save_path', type=str, default='1200allup', help='Task#')
     args=parser.parse_args()
     print '*' * 80
     print 'args:', args
