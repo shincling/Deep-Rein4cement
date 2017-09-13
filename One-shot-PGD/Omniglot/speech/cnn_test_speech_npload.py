@@ -81,6 +81,7 @@ def lasagne_model():
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
     # l_pool2 = DropoutLayer(l_pool2, p=0.2)
 
+    # TODO:tanh这个要研究啊！
     l_hidden3 = DenseLayer(l_pool2, num_units = h_dimension, nonlinearity=tanh)
     l_hidden3 = batch_norm(l_hidden3)
     # l_hidden3 = DropoutLayer(l_hidden3, p=0.3)

@@ -30,6 +30,7 @@ PIXELS = one_sample.shape[0]
 speechSize = one_sample.shape
 num_labels_train=len(train_files)
 num_sample_list=[int(file.split('_')[-1].split('.')[0]) for file in train_files]
+print 'max num:{},min num:{}'.format(max(num_sample_list),min(num_sample_list))
 num_speechs=np.array(num_sample_list).sum()
 print 'all labels for CNN:',num_labels_train,'all samples:',num_speechs
 h_dimension=300
@@ -51,6 +52,8 @@ load_params='params/cnn_28/validbest_pix28_batchnorm_0_0.96578125_2017-07-24 11:
 load_params='params/cnn_28/weights_0.00839128953114_batchnorm_last4_cnn_rotate_5_triplet_2017-07-24 18:26:28.pklz'
 load_params='params/cnn_28/weights_0.00309908878308_batchnorm_lastall_cnn_rotate_0.5_triplet_2017-07-31 01:24:14.pklz'
 load_params='speech_params/validbest_cnn_fisher_0_idxbatch15000_0.46875_2017-08-17 14:43:10.pklz' # 1 shot: 99.0 2000多次
+load_params='speech_params/validbest_cnn_fisher_0_idxbatch65000_0.75_2017-08-18 12:29:41.pklz' # 77.5
+load_params='speech_params/validbest_cnn_fisher_0_validacc0.695228494624_2017-08-21 15:11:12.pklz' #
 print load_params
 # load_params=0
 
@@ -185,7 +188,7 @@ def main():
         if i%1==0:
             aver_loss=aver_loss/num_batches
             all_params = helper.get_all_param_values(output_layer_softmax)
-            f = gzip.open('params/cnn_28/weights_{}_batchnorm_12345aver_{}_triplet_{}.pklz'.format(aver_loss,alpha,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
+            f = gzip.open('speech_params/speech_{}_batchnorm_12345aver_{}_triplet_{}.pklz'.format(aver_loss,alpha,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())), 'wb')
             pickle.dump(all_params, f)
             f.close()
 
