@@ -10,7 +10,8 @@ import theano
 import theano.tensor as T
 from sklearn.preprocessing import LabelBinarizer,label_binarize
 from lasagne.layers import batch_norm
-import speech_features_forDirs as speech
+# import speech_features_forDirs as speech
+import speech_1of5_npload as speech
 from tqdm import tqdm
 
 def action_to_vector_real(x, n_classes): #x是bs*path_length
@@ -504,17 +505,32 @@ class Model:
         save_path=self.save_path
         total_test=1000
         total_test=10000
-        if 0:
+        if 1:
             pre_finished=1
             ppparmas='params/cnn_28/weights_0.000715472522347_batchnorm_12345aver_0.5_triplet_2017-08-08 05:08:47.pklz' # 1 shot:99.2(600),5 shot:99.7(300)
             ppparmas='params/cnn_28/weights_0.000572063863097_batchnorm_12345aver_0.5_triplet_2017-08-09 02:26:27.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch0_0.4375_2017-08-17 09:58:58.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch5000_0.5625_2017-08-17 11:25:04.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch15000_0.46875_2017-08-17 14:43:10.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch20000_0.65625_2017-08-17 16:14:04.pklz' # 1 shot: 99.0 2000多次
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch55000_0.6875_2017-08-18 09:47:16.pklz' # 75
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch65000_0.75_2017-08-18 12:29:41.pklz' # 77.5
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch75000_0.53125_2017-08-18 15:20:45.pklz' #75.6
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch80000_0.65625_2017-08-18 16:44:29.pklz' #
+            ppparmas='speech_params/validbest_cnn_fisher_0_idxbatch90000_0.75_2017-08-18 19:35:51.pklz' #
+            ppparmas='speech_params/validbest_cnn_fisher_0_validacc0.695228494624_2017-08-21 15:11:12.pklz' #
+            ppparmas='speech_params/speech_0.105219539869_batchnorm_12345aver_0.5_triplet_2017-08-21 21:05:04.pklz' #
+            ppparmas='speech_params/speech_0.0652200366579_batchnorm_12345aver_0.5_triplet_2017-08-22 07:11:46.pklz' #80.9了　牛逼　
+            ppparmas='speech_params/validbest_cnn_fisher_0_validacc0.73689516129_2017-08-22 12:11:33.pklz' #　
+            ppparmas='speech_params/speech_0.0501166900573_batchnorm_12345aver_0.5_triplet_2017-08-23 10:28:50.pklz' #　0.823588709677
+            ppparmas='speech_params/validbest_cnn_fisher_0_validacc0.742943548387_2017-08-23 15:02:12.pklz' #　0.755040322581 	749.0 992  5shot:0.776209677419 	770.0 992
+            # ppparmas='speech_params/speech_0.0412053047761_batchnorm_12345aver_0.5_triplet_2017-07-04 17:04:40.pklz' #　0.829637096774 	823.0 992
+            # ppparmas='speech_params/speech_0.0312583775362_batchnorm_12345aver_0.5_triplet_2017-07-07 00:11:41.pklz' #　0.829637096774 	823.0 992   5way:0.884072580645 	877.0 992
             print ppparmas
             prev_weights_stable=pickle.load(gzip.open(ppparmas))#
             if pre_finished:
-                lasagne.layers.set_all_param_values(self.nnn,prev_weights_stable[:-2])
+                lasagne.layers.set_all_param_values(self.cnn,prev_weights_stable[:-2])
                 print 'load succeed!\n'
-                pre_finished=0
-                hid=0
         else:
             pre_finished=0
         # xx, yy = get_dataset(x_dim,path_length,n_classes) #xx是[sample,path_length,dimension]，yy是[sample.path_length]
