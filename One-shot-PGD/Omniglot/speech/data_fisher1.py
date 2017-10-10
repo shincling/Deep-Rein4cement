@@ -7,6 +7,9 @@ import pickle
 import gzip
 import time
 
+'''这个程序是将拷贝过来的kaidi的那些原始特征数据导成我需要的按人来的特征数据,
+   主要学要调节的施split_speech的第二个参数，用来控制存下来的语音的frame是多少，原始的一个frame是0.01s（确认过了）
+'''
 def split_speech(features,length=None):#如果不给第二个参数，就默认等同于跟特征个数一样的
     list=[]
     if not length:
@@ -40,7 +43,7 @@ def read_features(train_dict,train_of_test):
         tmp_list=[]
         for ark_path in ark_path_list:
             one_fea=read_utt_data(ark_path)
-            tmp_list.extend(split_speech(one_fea))
+            tmp_list.extend(split_speech(one_fea,310))
         # train_fea[train]=tmp_list
 
         if len(tmp_list )<5:
@@ -51,10 +54,12 @@ def read_features(train_dict,train_of_test):
         # train_fea[train]=0
         if train_of_test:
             # np.save('dataset/fisher/train/'+train+str(len(ark_path_list)),train_fea[train])
-            np.save('/media/sw/Elements/fisher_dataset/train_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
+            # np.save('/media/sw/Elements/fisher_dataset/train_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
+            np.save('/media/sw/Elements/fisher_dataset/train_pix310/'+train+'_'+str(len(tmp_list)),tmp_list)
         else:
             # np.save('dataset/fisher/test/'+train+str(len(ark_path_list)),train_fea[train])
-            np.save('/media/sw/Elements/fisher_dataset/test_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
+            # np.save('/media/sw/Elements/fisher_dataset/test_pix40/'+train+'_'+str(len(tmp_list)),tmp_list)
+            np.save('/media/sw/Elements/fisher_dataset/test_pix310/'+train+'_'+str(len(tmp_list)),tmp_list)
         counter+=1
 
     print 'length:',counter
