@@ -72,17 +72,22 @@ def get_sequence_speechs(data,path_length,total_label,size,total_roads=10000,pat
 
 
 # aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_100_665_41.mat')
-aa=sio.loadmat('testIvs4096_100_665_41.mat')
+# aa=sio.loadmat('testIvs4096_100_665_41.mat')
+# aa=sio.loadmat('testIvs2046_new_300_665_41.mat')
+aa=sio.loadmat('testIvs256_310frame_100_664_10.mat')
 print type(aa)
 data=aa['testIVs']
 
-aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_back.mat')
-aa=sio.loadmat('testIvs4096_back.mat')
-data=aa['finalTestIVs']
+# aa=sio.loadmat('/home/sw/Shin/Codes/MSR Identity Toolkit v1.0/code/testIvs128_back.mat')
+# aa=sio.loadmat('testIvs4096_back.mat')
+# aa=sio.loadmat('testIvs2046_new_300_back.mat')
+# data=aa['finalTestIVs']
 #
 # data=np.random.random([100,665,41])
 del aa
-data=data.reshape(100,-1).transpose().reshape(665,-1,100,1) #665*41*100的聚脏嗯个
+# data=data.reshape(100,-1).transpose().reshape(665,-1,100,1) #665*41*100的聚脏嗯个
+data=data.reshape(100,-1).transpose().reshape(664,10,100,1) #665*41*100的聚脏嗯个
+# data=data.reshape(300,-1).transpose().reshape(665,-1,300,1) #665*41*300的聚脏嗯个
 global_data=data
 del data
 
@@ -100,18 +105,20 @@ number_shots_total=1#这个量用来约束到底是几shot
 load_data=0
 # load_data=0
 if load_data:
-    print 'Beginto load dataset.'
+    print 'Begin to load dataset.'
     tt=time.time()
+    # x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way1shot_2046300_train1000test1000.pklz'))
     x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle=pickle.load(gzip.open('dataset/speech_1of5_5way1shot_train1000test1000.pklz'))
     print 'load dataset finished , cost :',time.time()-tt
     del tt
 else:
-    x_train,y_train=get_sequence_speechs(range(665),path_length,total_labels_per_seq,speechSize,total_roads=total_roads,path=None)
-    x_test,y_test=get_sequence_speechs(range(665),path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=None)
+    rrr=range(global_data.shape[0])
+    x_train,y_train=get_sequence_speechs(rrr,path_length,total_labels_per_seq,speechSize,total_roads=total_roads,path=None)
+    x_test,y_test=get_sequence_speechs(rrr,path_length,total_labels_per_seq,speechSize,total_roads=total_roads_test,path=None)
     y_train_shuffle=shuffle_label(y_train.copy(),total_labels_per_seq)
     y_test_shuffle=shuffle_label(y_test.copy(),total_labels_per_seq)
     if 0:
-        f = gzip.open('dataset/speech_1of5iVectors_{}way{}shot_train{}test{}.pklz'.format(total_labels_per_seq,number_shots_total,total_roads,total_roads_test), 'wb')
+        f = gzip.open('dataset/speech_1of5iVectors_{}way{}shot_2046300_train{}test{}.pklz'.format(total_labels_per_seq,number_shots_total,total_roads,total_roads_test), 'wb')
         pickle.dump([x_train,y_train,x_test,y_test,y_train_shuffle,y_test_shuffle], f)
         f.close()
 
