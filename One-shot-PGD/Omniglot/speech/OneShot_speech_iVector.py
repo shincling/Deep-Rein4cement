@@ -233,14 +233,14 @@ class Model:
         # D1, D2, D3 = lasagne.init.Uniform(-1,1), lasagne.init.Uniform(-1,1), lasagne.init.Uniform(-1,1)
 
         l_range_in = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.x_dim[0],self.x_dim[1]))
-        l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in, [self.batch_size * self.path_length, 1, self.x_dim[0],self.x_dim[1]])
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
-        l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
-
+        # l_range_flatten = lasagne.layers.ReshapeLayer(l_range_in, [self.batch_size * self.path_length, 1, self.x_dim[0],self.x_dim[1]])
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_flatten,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        # l_range_dense2 = lasagne.layers.DenseLayer(l_range_dense2,self.tmp_h_dim,W=D1,nonlinearity=lasagne.nonlinearities.rectify) #[bs*path_length,dimension]
+        #
         l_range_label = lasagne.layers.InputLayer(shape=(self.batch_size,self.path_length,self.n_classes))
 
-        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size*self.path_length,1,self.tmp_h_dim])
-        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_dense2,[self.batch_size,self.path_length,self.tmp_h_dim])
+        l_range_hidden=lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size*self.path_length,1,self.tmp_h_dim])
+        l_range_dense2_origin=lasagne.layers.ReshapeLayer(l_range_in,[self.batch_size,self.path_length,self.tmp_h_dim])
 
 
         '''Policy Gradient Methods的模型，主要是从Memory状态得到action的概率'''
